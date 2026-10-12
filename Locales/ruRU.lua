@@ -227,7 +227,7 @@ L["Receive reminder updates only from the raid leader or raid officers."] =
 L["Only guild"] = "Только гильдия"
 L["Receive reminder updates only from guild members."] =
   "Получать напоминания только от членов гильдии."
-L["Overwrite by default"] = "Перезаписывать без вопросов"
+L["Overwrite by default"] = "Перезаписывать без подтверждения"
 L["Automatically overwrite reminders when received from other players. When off, you are asked first."] =
   "Автоматически перезаписывать напоминания, полученные от других игроков. Если отключено, сначала будет задан вопрос."
 L["Receiving"] = "Получение"

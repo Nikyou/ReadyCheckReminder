@@ -8,9 +8,9 @@
 ## SavedVariables: ReadyCheckReminderDB
 ## OptionalDeps: MRT, NorthernSkyRaidTools
 ## IconTexture: 134329
-## X-Curse-Project-ID: 
-## X-WoWI-ID: 
-## X-Wago-ID: 
+## X-Curse-Project-ID: 1741466
+## X-WoWI-ID: 27256
+## X-Wago-ID: nKWwyWKE
 
 embeds.xml
 

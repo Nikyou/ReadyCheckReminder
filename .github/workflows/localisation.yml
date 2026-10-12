@@ -1,0 +1,37 @@
+name: Upload localisation strings to CurseForge
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Upload localisations
+        uses: p3lim/curseforge-localizations@v2
+        with:
+          exclude: |
+            Libs/**/*
+            Locales/deDE.lua
+            Locales/esES.lua
+            Locales/esMX.lua
+            Locales/frFR.lua
+            Locales/itIT.lua
+            Locales/koKR.lua
+            Locales/ptBR.lua
+            Locales/ruRU.lua
+            Locales/zhCN.lua
+            Locales/zhTW.lua
+            Dev/**
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}

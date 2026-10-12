@@ -1,0 +1,39 @@
+## Interface: 120100, 120105
+## Title: Ready Check Reminder
+## Notes: Shows your personal raid note assignments when a ready check starts.
+## Notes-ruRU: Отображает ваши персональные назначения из заметок при проверке готовности.
+## Version: @project-version@
+## Author: Nikyou (Megabelly-Silvermoon EU)
+## Category: Dungeons & Raids
+## SavedVariables: ReadyCheckReminderDB
+## OptionalDeps: MRT, NorthernSkyRaidTools
+## IconTexture: 134329
+## X-Curse-Project-ID: 
+## X-WoWI-ID: 
+## X-Wago-ID: 
+
+embeds.xml
+
+Locales.xml
+
+Data\Raids.lua
+Data\NpcSections.lua
+
+Core.lua
+Notes.lua
+Parser.lua
+Wildcards.lua
+Reminders.lua
+LoadConditions.lua
+Database.lua
+Display.lua
+ImportExport.lua
+Comms.lua
+
+Options\Widgets.lua
+Options\Options.lua
+Options\DisplayTab.lua
+Options\Editor.lua
+Options\RemindersTab.lua
+Options\SharingTab.lua
+Options\ProfilesTab.lua

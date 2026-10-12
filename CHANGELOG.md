@@ -1,4 +1,4 @@
-#### 12.1.1
+#### 12.1.0
 ### First release
 * Shows your own assignments from the MRT note (and NSRT, if you use it) when a ready check starts.
 * Three reminder types: keyword line, keyword group and raid group.

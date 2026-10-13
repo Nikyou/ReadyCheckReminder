@@ -1,6 +1,6 @@
 ## Download link
 
-
+https://www.curseforge.com/wow/addons/ready-check-reminder
 
 ## Introduction
 

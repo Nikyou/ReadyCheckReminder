@@ -59,7 +59,7 @@ If someone has a newer version of the addon, you get a heads up, but their remin
 
 ## Localisation
 
-I will be glad if you could help with the addon localisation through the [Curseforge localisation](https://legacy.curseforge.com/wow/addons//localization) feature.
+I will be glad if you could help with the addon localisation through the [Curseforge localisation](https://legacy.curseforge.com/wow/addons/ready-check-reminder/localization) feature.
 
 ## Issues & Feedback
 

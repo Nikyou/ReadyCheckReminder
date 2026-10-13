@@ -93,11 +93,9 @@ local function layoutLine(line, index, count)
     line:SetFont(fontPath(), db.fontSize, outlineFlag())
 end
 
--- edit boxes save a typed | as ||, so undo that to let colour codes, textures, atlases and links
--- work, then turn {rt1} / {star} style markers into icons the same way chat does
+-- edit boxes save a typed | as ||, so undo that to let colour codes, textures, atlases and links work
 function Display.FormatText(text)
-    text = text:gsub("||", "|")
-    return C_ChatInfo.ReplaceIconAndGroupExpressions(text)
+    return (text:gsub("||", "|"))
 end
 
 local function itemText(item)

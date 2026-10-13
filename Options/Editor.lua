@@ -70,6 +70,38 @@ local function refreshLineLabels()
     end
 end
 
+-- hover help for the text boxes, TimelineReminders style: "{code} -> what it turns into"
+local ARROW = "|A:common-icon-forwardarrow:0:0|a"
+local EXAMPLE_VARS = { line = 2, pos = 3 }
+
+local function fillTextTooltip(tip)
+    tip:SetText(L["Reminder text"])
+    tip:AddLine(L["Some text replacements are supported, for example:"], 1, 1, 1, true)
+    tip:AddLine(" ")
+    local function example(code, result)
+        result = result or ns.Display.FormatText(ns.Wildcards.Expand(code, EXAMPLE_VARS, ns.Wildcards.Lookup))
+        tip:AddLine(code .. " " .. ARROW .. " " .. result, 1, 1, 1)
+    end
+    example("{spell:642}")
+    example("{spellname:642}")
+    example("{npc:<id>}", L["NPC name"])
+    example("{icon:237510}")
+    example("{texture:Interface\\TargetingFrame\\UI-RaidTargetingIcon_1}")
+    example("{rt1}")
+    example("{diamond}")
+    example("{Demon Hunter}")
+    example("{Frost Mage}")
+    example("{tank} {healer} {dps}")
+    if reminder and ns.Parser.SupportsLineVars(reminder.type) then
+        example("{line}", L["line number"])
+        example("{pos}", L["your position in the line"])
+    end
+    -- typed into an edit box the code is ||c...||r, shown here the same way
+    example("||cffff0000" .. L["Text"] .. "||r", "|cffff0000" .. L["Text"] .. "|r")
+    tip:AddLine(" ")
+    tip:AddLine(L["Raid marker names work in every client language."], 0.6, 0.6, 0.6, true)
+end
+
 local function lineRow(index)
     local row = lineRows[index]
     if row then return row end
@@ -83,6 +115,7 @@ local function lineRow(index)
         reminder.texts[row.line] = text
         changed()
     end)
+    W.AddTooltip(row.edit, fillTextTooltip)
     row.edit:SetPoint("LEFT", 70, 0)
     lineRows[index] = row
     return row
@@ -113,6 +146,7 @@ local function groupRow(index)
         reminder.groups[row.entry].text = text
         changed()
     end)
+    W.AddTooltip(row.edit, fillTextTooltip)
     row.edit:SetPoint("TOPLEFT", 6, -26)
     groupRows[index] = row
     return row
@@ -222,6 +256,7 @@ local function createWidgets()
     w.perLine = register(W.CheckBox(content, L["One text per line"], function(checked) reminder.perLine = checked; changed(true) end))
     w.textLabel = label("", Style.MUTED)
     w.text = register(W.EditBox(content, WIDTH - 2 * PAD, function(text) reminder.text = text; changed() end))
+    W.AddTooltip(w.text, fillTextTooltip)
     w.addLine = register(W.Button(content, L["Add line"], nil, 22, function()
         reminder.texts[ns.Reminders.MaxLine(reminder) + 1] = ""
         changed(true)
@@ -244,8 +279,6 @@ local function createWidgets()
 
     w.warning = label("", Style.WARN)
     w.warning:SetWidth(WIDTH - 2 * PAD)
-    w.wildcards = label("", Style.MUTED, 11)
-    w.wildcards:SetWidth(WIDTH - 2 * PAD)
 
     w.loadTitle = sectionTitle(L["Load conditions"])
     w.loadHelp = label(L["Nothing selected means any."], Style.MUTED)
@@ -480,12 +513,6 @@ function Editor:Layout()
         y = layoutTexts(y)
     end
 
-    local supportsLine = ns.Parser.SupportsLineVars(reminder.type)
-    w.wildcards:SetText(supportsLine
-        and L["Wildcards: %npc:<id>, %spell:<id>, %line, %pos. Write %% to show a literal %. Colour codes and raid markers like {rt1} work too."]
-        or L["Wildcards: %npc:<id>, %spell:<id>. Write %% to show a literal %. Colour codes and raid markers like {rt1} work too."])
-    place(w.wildcards, PAD, y)
-    y = y + w.wildcards:GetStringHeight() + 6
     place(w.warning, PAD, y)
     y = y + 34
 
@@ -503,7 +530,7 @@ local function updateWarnings()
         end
     end
     w.warning:SetText(unsupported
-        and L["%line and %pos only work in keyword reminders; here they are shown as written."]
+        and L["{line} and {pos} only work in keyword reminders; here they are shown as written."]
         or "")
 end
 

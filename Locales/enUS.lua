@@ -162,10 +162,13 @@ L["Your result with the current notes and group (load conditions are ignored)."]
 L["Text for lines without a number"] = true
 L["Text for all lines"] = true
 L["Line %d"] = true
-L["Wildcards: %npc:<id>, %spell:<id>, %line, %pos. Write %% to show a literal %. Colour codes and raid markers like {rt1} work too."] =
-  true
-L["Wildcards: %npc:<id>, %spell:<id>. Write %% to show a literal %. Colour codes and raid markers like {rt1} work too."] = true
-L["%line and %pos only work in keyword reminders; here they are shown as written."] = true
+L["Reminder text"] = true
+L["Some text replacements are supported, for example:"] = true
+L["NPC name"] = true
+L["line number"] = true
+L["your position in the line"] = true
+L["Raid marker names work in every client language."] = true
+L["{line} and {pos} only work in keyword reminders; here they are shown as written."] = true
 L["Nothing to show for you with the current note."] = true
 L["Select or create a reminder."] = true
 L["Instance Difficulty"] = true

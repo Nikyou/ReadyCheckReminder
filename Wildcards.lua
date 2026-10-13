@@ -1,89 +1,150 @@
--- %npc:<id>, %spell:<id>, %line, %pos, and %% for a literal %.
--- Expand/Scan get name lookups passed in so the tests can run them; the in-game lookups are at the bottom.
+-- {...} text replacements in reminder texts, in the style of TimelineReminders:
+--   {spell:<id>} spell icon, {spellname:<id>} spell name, {npc:<id>} npc name,
+--   {icon:<id or path>} / {texture:<id or path>}, raid markers ({rt1}, {star}, {ромб}...),
+--   English class / spec names and {tank} {healer} {dps} as icons, {line} and {pos}.
+-- Expand/Scan get the game lookups passed in so the tests can run them; the in-game ones are at the bottom.
 local _, ns = ...
 ns = ns or {}
 
 local Wildcards = {}
 ns.Wildcards = Wildcards
 
-local find, sub, format = string.find, string.sub, string.format
-local tconcat = table.concat
+local format, lower = string.format, string.lower
 
--- calls handler(kind, id, raw) per wildcard (kind npc/spell/line/pos) and
--- handler("text", nil, s) for plain text in between
-local function walk(text, handler)
-    local i, n = 1, #text
-    while i <= n do
-        local s = find(text, "%", i, true)
-        if not s then
-            handler("text", nil, sub(text, i))
-            return
-        end
-        if s > i then handler("text", nil, sub(text, i, s - 1)) end
-        if sub(text, s + 1, s + 1) == "%" then
-            -- "%%pos" shows up as a literal "%pos"
-            handler("text", nil, "%")
-            i = s + 2
-        else
-            local _, e, id = find(text, "^npc:(%d+)", s + 1)
-            local kind
-            if e then
-                kind = "npc"
-            else
-                _, e, id = find(text, "^spell:(%d+)", s + 1)
-                if e then
-                    kind = "spell"
-                else
-                    for _, name in ipairs({"line", "pos"}) do
-                        local last = s + #name
-                        if sub(text, s + 1, last) == name and not find(sub(text, last + 1, last + 1), "^[%w_]") then
-                            kind, e = name, last
-                            break
-                        end
-                    end
-                end
-            end
-            if kind then
-                handler(kind, id and tonumber(id), sub(text, s, e))
-                i = e + 1
-            else
-                handler("text", nil, "%")
-                i = s + 1
-            end
-        end
+-- raid marker names in every client language, in {rt1}..{rt8} order
+local MARKER_NAMES = {
+    { "star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull" },
+    { "stern", "kreis", "diamant", "dreieck", "mond", "quadrat", "kreuz", "totenschädel" },
+    { "étoile", "cercle", "losange", "triangle", "lune", "carré", "croix", "crâne" },
+    { "stella", "cerchio", "rombo", "triangolo", "luna", "quadrato", "croce", "teschio" },
+    { "звезда", "круг", "ромб", "треугольник", "полумесяц", "квадрат", "крест", "череп" },
+    { "dorado", "naranja", "morado", "verde", "plateado", "azul", "rojo", "blanco" },
+    { "dourado", "laranja", "roxo", "verde", "prateado", "azul", "vermelho", "branco" },
+}
+local markerIndex = {}
+for _, names in ipairs(MARKER_NAMES) do
+    for index, name in ipairs(names) do markerIndex[lower(name)] = index end
+end
+
+local MARKER_ICON = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t"
+
+local CLASSES = {
+    ["warrior"] = "warrior", ["paladin"] = "paladin", ["hunter"] = "hunter", ["rogue"] = "rogue",
+    ["priest"] = "priest", ["death knight"] = "deathknight", ["shaman"] = "shaman", ["mage"] = "mage",
+    ["warlock"] = "warlock", ["monk"] = "monk", ["druid"] = "druid", ["demon hunter"] = "demonhunter",
+    ["evoker"] = "evoker",
+}
+
+local ROLE_ATLAS = {
+    tank = "UI-LFG-RoleIcon-Tank-Micro-GroupFinder",
+    healer = "UI-LFG-RoleIcon-Healer-Micro-GroupFinder",
+    dps = "UI-LFG-RoleIcon-DPS-Micro-GroupFinder",
+}
+
+-- English spec names. {Arms} works on its own, names shared by two classes need the class
+-- too ({Frost Mage}, {Holy Priest}); every spec also works as "{Spec Class}"
+local SPECS = {
+    { 71, "Arms", "Warrior" }, { 72, "Fury", "Warrior" }, { 73, "Protection", "Warrior" },
+    { 65, "Holy", "Paladin" }, { 66, "Protection", "Paladin" }, { 70, "Retribution", "Paladin" },
+    { 253, "Beast Mastery", "Hunter" }, { 254, "Marksmanship", "Hunter" }, { 255, "Survival", "Hunter" },
+    { 259, "Assassination", "Rogue" }, { 260, "Outlaw", "Rogue" }, { 261, "Subtlety", "Rogue" },
+    { 256, "Discipline", "Priest" }, { 257, "Holy", "Priest" }, { 258, "Shadow", "Priest" },
+    { 250, "Blood", "Death Knight" }, { 251, "Frost", "Death Knight" }, { 252, "Unholy", "Death Knight" },
+    { 262, "Elemental", "Shaman" }, { 263, "Enhancement", "Shaman" }, { 264, "Restoration", "Shaman" },
+    { 62, "Arcane", "Mage" }, { 63, "Fire", "Mage" }, { 64, "Frost", "Mage" },
+    { 265, "Affliction", "Warlock" }, { 266, "Demonology", "Warlock" }, { 267, "Destruction", "Warlock" },
+    { 268, "Brewmaster", "Monk" }, { 269, "Windwalker", "Monk" }, { 270, "Mistweaver", "Monk" },
+    { 102, "Balance", "Druid" }, { 103, "Feral", "Druid" }, { 104, "Guardian", "Druid" }, { 105, "Restoration", "Druid" },
+    { 577, "Havoc", "Demon Hunter" }, { 581, "Vengeance", "Demon Hunter" }, { 1480, "Devourer", "Demon Hunter" },
+    { 1467, "Devastation", "Evoker" }, { 1468, "Preservation", "Evoker" }, { 1473, "Augmentation", "Evoker" },
+}
+local specByName = {}
+do
+    local count = {}
+    for _, spec in ipairs(SPECS) do
+        local name = lower(spec[2])
+        count[name] = (count[name] or 0) + 1
+        specByName[name .. " " .. lower(spec[3])] = spec[1]
+    end
+    for _, spec in ipairs(SPECS) do
+        local name = lower(spec[2])
+        if count[name] == 1 then specByName[name] = spec[1] end
     end
 end
 
--- vars = { line, pos }, nil for group reminders (then %line/%pos stay as written).
--- lookup = { npc = fn(id), spell = fn(id) }, unknown names show as [npc:123]
+local QUESTION_MARK = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+local function textureMarkup(texture)
+    return format("|T%s:0|t", texture)
+end
+
+-- spell icons cropped a little like the default UI does
+local function spellIconMarkup(texture)
+    return format("|T%s:0:0:0:0:64:64:5:59:5:59|t", texture)
+end
+
+-- one {...} token -> replacement, or nil to leave it as written
+local function replace(inner, vars, lookup)
+    local key, value = inner:match("^(%a+):(.+)$")
+    if key then
+        key = lower(key)
+        local id = tonumber(value)
+        if key == "spell" and id then
+            local icon = lookup and lookup.spellIcon and lookup.spellIcon(id)
+            return spellIconMarkup(icon or QUESTION_MARK)
+        elseif key == "spellname" and id then
+            local name = lookup and lookup.spell and lookup.spell(id)
+            return (type(name) == "string" and name ~= "") and name or format("[spellname:%d]", id)
+        elseif key == "npc" and id then
+            local name = lookup and lookup.npc and lookup.npc(id)
+            return (type(name) == "string" and name ~= "") and name or format("[npc:%d]", id)
+        elseif key == "icon" or key == "texture" then
+            return textureMarkup(value)
+        end
+        return nil
+    end
+
+    local name = lower(inner)
+    if name == "line" or name == "pos" then
+        local number = vars and vars[name]
+        return number and tostring(number) or nil
+    end
+    local marker = tonumber(name:match("^rt([1-8])$")) or markerIndex[name]
+    if marker then return format(MARKER_ICON, marker) end
+    if ROLE_ATLAS[name] then return format("|A:%s:0:0|a", ROLE_ATLAS[name]) end
+    if CLASSES[name] then return format("|A:classicon-%s:0:0|a", CLASSES[name]) end
+    local specID = specByName[name]
+    if specID then
+        local icon = lookup and lookup.specIcon and lookup.specIcon(specID)
+        return icon and textureMarkup(icon) or nil
+    end
+    return nil
+end
+
+-- vars = { line, pos }, nil for group reminders (then {line}/{pos} stay as written).
+-- lookup = { npc, spell, spellIcon, specIcon } functions taking an ID. unknown tokens are left alone
 function Wildcards.Expand(text, vars, lookup)
     if type(text) ~= "string" or text == "" then return "" end
-    local out = {}
-    walk(text, function(kind, id, raw)
-        if kind == "text" then
-            out[#out + 1] = raw
-        elseif kind == "line" or kind == "pos" then
-            local value = vars and vars[kind]
-            out[#out + 1] = value and tostring(value) or raw
-        else
-            local name = lookup and lookup[kind] and lookup[kind](id)
-            out[#out + 1] = (type(name) == "string" and name ~= "") and name or format("[%s:%d]", kind, id)
-        end
-    end)
-    return tconcat(out)
+    return (text:gsub("{([^{}]+)}", function(inner) return replace(inner, vars, lookup) end))
 end
 
 -- returns { npc = { [id] = true }, spell = { [id] = true }, line = bool, pos = bool }
+-- spell holds the {spellname:} IDs, the ones that need a name loaded
 function Wildcards.Scan(text)
-    local found = {npc = {}, spell = {}, line = false, pos = false}
+    local found = { npc = {}, spell = {}, line = false, pos = false }
     if type(text) ~= "string" then return found end
-    walk(text, function(kind, id)
-        if kind == "npc" or kind == "spell" then
-            found[kind][id] = true
-        elseif kind == "line" or kind == "pos" then
-            found[kind] = true
+    for inner in text:gmatch("{([^{}]+)}") do
+        local key, id = inner:match("^(%a+):(%d+)$")
+        key = key and lower(key)
+        if key == "npc" then
+            found.npc[tonumber(id)] = true
+        elseif key == "spellname" then
+            found.spell[tonumber(id)] = true
+        else
+            local name = lower(inner)
+            if name == "line" or name == "pos" then found[name] = true end
         end
-    end)
+    end
     return found
 end
 
@@ -166,9 +227,15 @@ function Wildcards.GetSpellName(spellId)
     return nil
 end
 
+local function usableIcon(icon)
+    return icon ~= nil and not issecretvalue(icon) and icon ~= 0 and icon or nil
+end
+
 Wildcards.Lookup = {
     npc = function(id) return Wildcards.GetNpcName(id) end,
     spell = function(id) return Wildcards.GetSpellName(id) end,
+    spellIcon = function(id) return usableIcon(C_Spell.GetSpellTexture(id)) end,
+    specIcon = function(id) return usableIcon((select(4, GetSpecializationInfoByID(id)))) end,
 }
 
 -- request names ahead of time so they're cached before the ready check

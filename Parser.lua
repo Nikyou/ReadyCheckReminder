@@ -301,7 +301,7 @@ function Parser.EvaluateForTest(reminder, ctx, mockOnly)
     return withoutWarnings(Parser.EvaluateReminder(reminder, mock))
 end
 
--- %line / %pos only mean something for keyword types
+-- {line} / {pos} only mean something for keyword types
 function Parser.SupportsLineVars(reminderType)
     return reminderType == Parser.TYPE_KEYWORD_LINE or reminderType == Parser.TYPE_KEYWORD_GROUP
 end

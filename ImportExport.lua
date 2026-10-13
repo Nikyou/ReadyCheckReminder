@@ -24,7 +24,8 @@ local MAX_SUMMARY_NAMES = 10
 
 -- oldest version that can read strings made by this one. bump it when the data changes in a
 -- way older versions would misread, so they refuse the string instead of importing junk.
-local MIN_READER_VERSION = "12.1.0"
+-- 12.1.1: reminder texts moved from %wildcards to {replacements}
+local MIN_READER_VERSION = "12.1.1"
 
 -- the other direction: refuse strings made by versions older than this, for when reminders
 -- change so much that old data isn't worth converting. nil = accept everything.

@@ -160,6 +160,16 @@ function W.FlowLayout(parent, widgets, maxWidth, x0, y0, gap)
     return y + rowHeight
 end
 
+-- fill(tooltip) builds the GameTooltip each time the widget is hovered
+function W.AddTooltip(widget, fill)
+    widget:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        fill(GameTooltip)
+        GameTooltip:Show()
+    end)
+    widget:HookScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
 -- onChange only fires for user edits, not SetText
 function W.EditBox(parent, width, onChange)
     local edit = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")

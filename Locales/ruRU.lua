@@ -182,12 +182,14 @@ L["Your result with the current notes and group (load conditions are ignored)."]
 L["Text for lines without a number"] = "Текст для строк без номера"
 L["Text for all lines"] = "Текст для всех строк"
 L["Line %d"] = "Строка %d"
-L["Wildcards: %npc:<id>, %spell:<id>, %line, %pos. Write %% to show a literal %. Colour codes and raid markers like {rt1} work too."] =
-  "Подстановки: %npc:<id>, %spell:<id>, %line, %pos. %% выводит знак %. Также работают цветовые коды и метки целей вроде {rt1}."
-L["Wildcards: %npc:<id>, %spell:<id>. Write %% to show a literal %. Colour codes and raid markers like {rt1} work too."] =
-  "Подстановки: %npc:<id>, %spell:<id>. %% выводит знак %. Также работают цветовые коды и метки целей вроде {rt1}."
-L["%line and %pos only work in keyword reminders; here they are shown as written."] =
-  "%line и %pos работают только в напоминаниях по ключевым словам, здесь они выводятся как есть."
+L["Reminder text"] = "Текст напоминания"
+L["Some text replacements are supported, for example:"] = "Поддерживаются некоторые замены текста, например:"
+L["NPC name"] = "имя NPC"
+L["line number"] = "номер строки"
+L["your position in the line"] = "ваше место в строке"
+L["Raid marker names work in every client language."] = "Названия меток целей работают на любом языке клиента."
+L["{line} and {pos} only work in keyword reminders; here they are shown as written."] =
+  "{line} и {pos} работают только в напоминаниях по ключевым словам, здесь они выводятся как есть."
 L["Nothing to show for you with the current note."] = "По текущей заметке для вас ничего нет."
 L["Select or create a reminder."] = "Выберите или создайте напоминание."
 L["Instance Difficulty"] = "Сложность подземелья"

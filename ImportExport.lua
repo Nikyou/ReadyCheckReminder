@@ -144,6 +144,7 @@ local DISPLAY_FIELDS = {
     spacing = function(v) return type(v) == "number" and math.max(0, math.min(40, v)) or nil end,
     duration = function(v) return type(v) == "number" and math.max(3, math.min(60, v)) or nil end,
     locked = boolean,
+    cyrillicFriz = boolean,
 }
 
 local MINIMAP_FIELDS = {hide = boolean, minimapPos = function(v) return type(v) == "number" and v or nil end}

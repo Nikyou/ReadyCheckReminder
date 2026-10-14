@@ -6,7 +6,7 @@ L["Area IDs named \"%s\": %s"] = true
 L["No area ID in %d-%d is named \"%s\"."] = true
 L["Ready Check Reminder"] = true
 L["Select a boss first."] = true
-L["Nothing to show for %s with the current notes."] = true
+L["Nothing to show for %s with the current note."] = true
 L["Instance ID: %s"] = true
 L["Zone: %s"] = true
 L["Subzone: %s"] = true
@@ -18,6 +18,10 @@ L["Click to open the settings."] = true
 L["This reminder has no text to show."] = true
 L["No loaded reminders to show."] = true
 L["/rcr reset - move the settings window back to the middle of the screen"] = true
+L["Soak %s"] = true
+L["SECOND"] = true
+L["Interrupt %s, order 3"] = true
+L["Left, group 1-2"] = true
 
 -- Database.lua
 L["Encounter %d"] = true
@@ -117,6 +121,10 @@ L["Y"] = true
 L["Offsets of the anchor's center from the screen center."] = true
 L["Text growth"] = true
 L["Shows every loaded reminder with a test note that puts you on each of its lines. Zone and difficulty are ignored."] = true
+L["Compatibility"] = true
+L["Cyrillic Friz Quadrata"] = true
+L["Shows Cyrillic text with Friz Quadrata on non-Russian clients. Some accented letters like é or ö may not show."] = true
+L["Shows a few sample reminders so you can check the font, size and position."] = true
 
 -- Options/RemindersTab.lua
 L["No reminders yet. Click \"New\" to create one."] = true
@@ -132,6 +140,9 @@ L["Drag to reorder. This is the display order."] = true
 L["Reminders"] = true
 L["Right-click to send or export"] = true
 L["There are no reminders in this section."] = true
+L["Test with current note"] = true
+L["Shows this boss's reminders the way the next ready check would, with the note as it is now. Zone and difficulty are ignored."] = true
+L["Test with test note"] = true
 
 -- Options/Editor.lua
 L["Name"] = true
@@ -162,7 +173,7 @@ L["Ranged"] = true
 L["Class"] = true
 L["Specialization"] = true
 L["Preview"] = true
-L["Your result with the current notes and group (load conditions are ignored)."] = true
+L["Your result with the current note and group (load conditions are ignored)."] = true
 L["Text for lines without a number"] = true
 L["Text for all lines"] = true
 L["Line %d"] = true

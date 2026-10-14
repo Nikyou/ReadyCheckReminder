@@ -34,12 +34,13 @@ You set up the reminders for a boss once (which keyword to look for and what to 
 * Colour codes work in reminder texts too, e.g. `||cffff0000Text||r`.
 * Load conditions: instance difficulty, class, specialisation, spec role and spec position (melee/ranged). Leave everything unticked to load for anyone.
 * Live preview while you edit a reminder, and a Test button that shows it on screen (it fakes a note with your name if the current one doesn't have you).
+* Under the reminder list, test the whole boss with the current note or with a test note that puts you on every line.
 * Movable display with font, size, outline, alignment, spacing, growth direction and duration settings.
 * Profiles, with export and import of the whole profile or only some bosses.
 
 ## Notes
 
-* MRT shared and personal notes are read, as well as the NSRT note and your NSRT personal note for that boss. If a reminder finds you in the MRT note, NSRT is not checked for that reminder.
+* The MRT shared and personal note are read, as well as the NSRT note and your NSRT personal note for that boss. If a reminder finds you in the MRT note, NSRT is not checked for that reminder.
 * Names match with or without the realm.
 * NSRT nicknames work as long as nicknames are turned on in NSRT.
 * Raid marks, plain words and players who are not in your group are skipped.
@@ -71,4 +72,4 @@ Found a bug or have a suggestion? Open an Issue on [GitHub](https://github.com/N
 
 ## Credits
 
-Thanks to the authors of [Method Raid Tools](https://www.curseforge.com/wow/addons/method-raid-tools) and [Northern Sky Raid Tools](https://www.curseforge.com/wow/addons/northern-sky-raid-tools) - their notes are what this addon reads.
+Thanks to the authors of [Method Raid Tools](https://www.curseforge.com/wow/addons/method-raid-tools) and [Northern Sky Raid Tools](https://www.curseforge.com/wow/addons/northern-sky-raid-tools) - their note is what this addon reads.

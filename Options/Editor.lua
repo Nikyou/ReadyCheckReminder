@@ -229,7 +229,7 @@ local function createWidgets()
     w.typeLabel = label("", Style.MUTED, 11)
 
     w.previewTitle = sectionTitle(L["Preview"])
-    w.previewHelp = label(L["Your result with the current notes and group (load conditions are ignored)."], Style.MUTED, 11)
+    w.previewHelp = label(L["Your result with the current note and group (load conditions are ignored)."], Style.MUTED, 11)
     w.previewHelp:SetWidth(WIDTH - 2 * PAD)
     w.preview = register(W.Panel(content))
     w.preview:SetWidth(WIDTH - 2 * PAD)

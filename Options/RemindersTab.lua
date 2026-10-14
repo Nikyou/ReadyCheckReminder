@@ -351,7 +351,7 @@ local function create(parent)
 
     list = W.ScrollArea(listPanel)
     list:SetPoint("TOPLEFT", 0, -32)
-    list:SetPoint("BOTTOMRIGHT", -20, 48)
+    list:SetPoint("BOTTOMRIGHT", -20, 74)
     emptyHint = W.Label(listPanel, "", nil, Style.MUTED)
     emptyHint:SetPoint("TOPLEFT", 4, -40)
     emptyHint:SetPoint("RIGHT", -4, 0)
@@ -361,10 +361,24 @@ local function create(parent)
     dragMarker:Hide()
 
     local hint = W.Label(listPanel, L["Drag to reorder. This is the display order."], 10)
-    hint:SetPoint("BOTTOMLEFT", 0, 30)
-    local test = W.Button(listPanel, L["Test"], LIST_WIDTH, 24,
+    hint:SetPoint("BOTTOMLEFT", 0, 56)
+    -- real notes like the next ready check, or a fake note with you on every line
+    local test = W.Button(listPanel, L["Test with current note"], LIST_WIDTH, 24,
                           function() ns.addon:TestBoss(DB.GetBoss(selectedBossKey() or "")) end)
-    test:SetPoint("BOTTOMLEFT")
+    W.AddTooltip(test, function(tip)
+        tip:SetText(L["Test with current note"])
+        tip:AddLine(L["Shows this boss's reminders the way the next ready check would, with the note as it is now. Zone and difficulty are ignored."], 1, 1, 1, true)
+    end)
+    local testNote = W.Button(listPanel, L["Test with test note"], LIST_WIDTH, 24, function()
+        local bossKey = selectedBossKey()
+        if bossKey then ns.addon:TestAll(bossKey) else ns.addon:Print(L["Select a boss first."]) end
+    end)
+    W.AddTooltip(testNote, function(tip)
+        tip:SetText(L["Test with test note"])
+        tip:AddLine(L["Shows every loaded reminder with a test note that puts you on each of its lines. Zone and difficulty are ignored."], 1, 1, 1, true)
+    end)
+    testNote:SetPoint("BOTTOMLEFT")
+    test:SetPoint("BOTTOMLEFT", 0, 26)
 
     local editorPanel = W.Panel(parent)
     editorPanel:SetPoint("TOPLEFT", TREE_WIDTH + LIST_WIDTH + 20, 0)

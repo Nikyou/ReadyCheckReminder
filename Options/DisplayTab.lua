@@ -5,8 +5,6 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local W, Style = ns.Widgets, ns.Style
 
 local controls = {}
-local ALL_BOSSES = "*"
-local testBossKey = ALL_BOSSES
 
 local function db() return ns.addon.db.profile.display end
 
@@ -31,18 +29,6 @@ local OUTLINES = {
 local JUSTIFY = {{value = "LEFT", text = L["Left"]}, {value = "CENTER", text = L["Center"]}, {value = "RIGHT", text = L["Right"]}}
 
 local GROWTH = {{value = "DOWN", text = L["Down"]}, {value = "UP", text = L["Up"]}}
-
-local function bossItems()
-    local items = {{value = ALL_BOSSES, text = L["All bosses"]}}
-    for _, boss in ns.Database.IterateBosses() do
-        local raid = ns.Database.GetRaidOfBoss(boss)
-        items[#items + 1] = {
-            value = boss.key,
-            text = format("%s - %s", ns.Database.GetBossName(boss), ns.Database.GetRaidName(raid)),
-        }
-    end
-    return items
-end
 
 local function sectionTitle(parent, text, x, y)
     local label = W.Label(parent, text, 13, Style.ACCENT)
@@ -126,16 +112,21 @@ local function create(parent)
     controls.minimap:SetPoint("TOPLEFT", right, -76)
 
     sectionTitle(parent, L["Test"], right, -120)
-    local testHelp = W.Label(parent,
-                             L["Shows every loaded reminder with a test note that puts you on each of its lines. Zone and difficulty are ignored."],
+    local testHelp = W.Label(parent, L["Shows a few sample reminders so you can check the font, size and position."],
                              nil, Style.MUTED)
     testHelp:SetPoint("TOPLEFT", right, -144)
     testHelp:SetWidth(COLUMN)
-    controls.boss = W.Dropdown(parent, COLUMN, bossItems, function(value) testBossKey = value end)
-    controls.boss:SetPoint("TOPLEFT", right, -184)
-    local testButton = W.Button(parent, L["Test"], 100, 24,
-                                function() ns.addon:TestAll(testBossKey ~= ALL_BOSSES and testBossKey or nil) end)
-    testButton:SetPoint("TOPLEFT", right, -214)
+    local testButton = W.Button(parent, L["Test"], 100, 24, function() ns.addon:TestSamples() end)
+    testButton:SetPoint("TOPLEFT", right, -174)
+
+    sectionTitle(parent, L["Compatibility"], right, -220)
+    controls.cyrillicFriz = W.CheckBox(parent, L["Cyrillic Friz Quadrata"], function(checked) setDisplay("cyrillicFriz", checked) end)
+    controls.cyrillicFriz:SetPoint("TOPLEFT", right, -244)
+    local cyrillicHelp = W.Label(parent,
+                                 L["Shows Cyrillic text with Friz Quadrata on non-Russian clients. Some accented letters like é or ö may not show."],
+                                 11, Style.MUTED)
+    cyrillicHelp:SetPoint("TOPLEFT", right + 28, -268)
+    cyrillicHelp:SetWidth(COLUMN - 28)
 
     ns.Options.onAnchorMoved = function(x, y)
         if not controls.x:HasFocus() then controls.x:SetText(tostring(x)) end
@@ -156,7 +147,7 @@ local function refresh()
     controls.spacing:SetValue(display.spacing)
     controls.duration:SetValue(display.duration)
     controls.minimap:SetChecked(not ns.addon.db.profile.minimap.hide)
-    controls.boss:SetValue(testBossKey)
+    controls.cyrillicFriz:SetChecked(display.cyrillicFriz)
 end
 
 table.insert(ns.OptionsTabs, {key = "display", label = L["Display"], Create = create, Refresh = refresh})

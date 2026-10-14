@@ -5,8 +5,8 @@ if not L then return end
 L["Area IDs named \"%s\": %s"] = "ID зон с названием \"%s\": %s"
 L["No area ID in %d-%d is named \"%s\"."] = "В диапазоне %d-%d нет зоны с названием \"%s\"."
 L["Select a boss first."] = "Сначала выберите босса."
-L["Nothing to show for %s with the current notes."] =
-  "Босс %s: по текущим заметкам показывать нечего."
+L["Nothing to show for %s with the current note."] =
+  "Босс %s: по текущей заметке показывать нечего."
 L["Instance ID: %s"] = "ID подземелья: %s"
 L["Zone: %s"] = "Зона: %s"
 L["Subzone: %s"] = "Подзона: %s"
@@ -17,6 +17,10 @@ L["/rcr - open the settings"] = "/rcr - открыть настройки"
 L["Click to open the settings."] = "Нажмите, чтобы открыть настройки."
 L["This reminder has no text to show."] = "У этого напоминания нет текста для показа."
 L["No loaded reminders to show."] = "Нет загруженных напоминаний для показа."
+L["Soak %s"] = "Сокаешь %s"
+L["SECOND"] = "ВТОРОЙ"
+L["Interrupt %s, order 3"] = "Сбиваешь %s, очередь 3"
+L["Left, group 1-2"] = "Налево, группа 1-2"
 L["/rcr reset - move the settings window back to the middle of the screen"] =
   "/rcr reset - вернуть окно настроек в центр экрана"
 
@@ -133,6 +137,12 @@ L["Offsets of the anchor's center from the screen center."] =
 L["Text growth"] = "Направление роста"
 L["Shows every loaded reminder with a test note that puts you on each of its lines. Zone and difficulty are ignored."] =
   "Показывает все загруженные напоминания по тестовой заметке, где вы есть в каждой строке. Зона и сложность не учитываются."
+L["Compatibility"] = "Совместимость"
+L["Shows a few sample reminders so you can check the font, size and position."] =
+  "Показывает несколько примеров напоминаний, чтобы проверить шрифт, размер и положение."
+L["Cyrillic Friz Quadrata"] = "Кириллический Friz Quadrata"
+L["Shows Cyrillic text with Friz Quadrata on non-Russian clients. Some accented letters like é or ö may not show."] =
+  "Показывает кириллический текст шрифтом Friz Quadrata в нерусских клиентах. Некоторые буквы с диакритикой, например é или ö, могут не отображаться."
 
 -- Options/RemindersTab.lua
 L["No reminders yet. Click \"New\" to create one."] =
@@ -150,6 +160,10 @@ L["Drag to reorder. This is the display order."] =
 L["Reminders"] = "Напоминания"
 L["Right-click to send or export"] = "ПКМ: отправить или экспортировать"
 L["There are no reminders in this section."] = "В этом разделе нет напоминаний."
+L["Test with current note"] = "Тест по текущей заметке"
+L["Test with test note"] = "Тест по тестовой заметке"
+L["Shows this boss's reminders the way the next ready check would, with the note as it is now. Zone and difficulty are ignored."] =
+  "Показывает напоминания этого босса так, как их покажет следующая проверка готовности по текущей заметке. Зона и сложность не учитываются."
 
 -- Options/Editor.lua
 L["Name"] = "Название"
@@ -182,8 +196,8 @@ L["Ranged"] = "Дальний бой"
 L["Class"] = "Класс"
 L["Specialization"] = "Специализация"
 L["Preview"] = "Предпросмотр"
-L["Your result with the current notes and group (load conditions are ignored)."] =
-  "Ваш результат по текущим заметкам и группе (условия загрузки не учитываются)."
+L["Your result with the current note and group (load conditions are ignored)."] =
+  "Ваш результат по текущей заметке и группе (условия загрузки не учитываются)."
 L["Text for lines without a number"] = "Текст для строк без номера"
 L["Text for all lines"] = "Текст для всех строк"
 L["Line %d"] = "Строка %d"

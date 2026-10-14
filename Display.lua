@@ -15,7 +15,15 @@ local currentItems, currentSource
 
 local function settings() return ns.addon.db.profile.display end
 
-local function fontPath() return LSM:Fetch("font", settings().font, true) or STANDARD_TEXT_FONT end
+-- the western Friz Quadrata has no Cyrillic, so Russian names in the note show as boxes.
+-- the Cyrillic file ships with every client but misses some accented letters, hence the option
+local LATIN_FRIZ, CYRILLIC_FRIZ = "Fonts\\FRIZQT__.TTF", "Fonts\\FRIZQT___CYR.TTF"
+
+local function fontPath()
+    local path = LSM:Fetch("font", settings().font, true) or STANDARD_TEXT_FONT
+    if settings().cyrillicFriz and type(path) == "string" and path:upper() == LATIN_FRIZ:upper() then return CYRILLIC_FRIZ end
+    return path
+end
 
 local function outlineFlag()
     local outline = settings().outline

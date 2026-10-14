@@ -22,6 +22,7 @@ local defaults = {
             spacing = 6,
             duration = 15,
             locked = true,
+            cyrillicFriz = true, -- Cyrillic Friz Quadrata on non-Russian clients
         },
         minimap = {hide = false},
         sharing = {
@@ -182,7 +183,7 @@ function addon:TestBoss(boss)
         return
     end
     if self:RunForBoss(boss, {ignoreDifficulty = true}) == 0 then
-        self:Print(format(L["Nothing to show for %s with the current notes."], ns.Database.GetBossName(boss)))
+        self:Print(format(L["Nothing to show for %s with the current note."], ns.Database.GetBossName(boss)))
     end
 end
 
@@ -198,7 +199,7 @@ function addon:TestReminder(bossKey, reminder)
     ns.Display:ShowItems(items)
 end
 
--- Display tab Test: mock notes for one boss (all if bossKey is nil). skips zone/difficulty, second click hides
+-- "Test with test note": mock notes for one boss (all if bossKey is nil). skips zone/difficulty, second click hides
 function addon:TestAll(bossKey)
     if ns.Display:IsShowing("displayTest") then
         ns.Display:HideItems()
@@ -227,6 +228,19 @@ function addon:TestAll(bossKey)
         return
     end
     ns.Display:ShowItems(items, "displayTest")
+end
+
+-- Display tab Test: a few made up reminders to look at the font and position. second click hides
+function addon:TestSamples()
+    if ns.Display:IsShowing("samples") then
+        ns.Display:HideItems()
+        return
+    end
+    ns.Display:ShowItems({
+        { template = format(L["Soak %s"], "|cffff0000" .. L["SECOND"] .. "|r") },
+        { template = "{spell:135740} " .. format(L["Interrupt %s, order 3"], "{rt5}") },
+        { template = "{icon:450906}" .. L["Left, group 1-2"] },
+    }, "samples")
 end
 
 -- an async npc/spell name came in

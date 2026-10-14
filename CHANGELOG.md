@@ -1,3 +1,10 @@
+#### 12.1.4
+### Display
+* New option "Cyrillic Friz Quadrata" (Display tab, on by default): reminders in Friz Quadrata now show Cyrillic on non-Russian clients. Some accented letters like é or ö may not show with it, turn it off if you need them.
+* Test in the Display tab now shows a few sample reminders, to check the font, size and position.
+### Reminders
+* Test is now "Test with current note" and shows the selected boss the way the next ready check would.
+* New "Test with test note" button next to it: shows the boss's reminders with a fake note that has you on every line (used to be in the Display tab).
 #### 12.1.3
 ### Kith'ix
 * Update icon.

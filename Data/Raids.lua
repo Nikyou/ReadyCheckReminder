@@ -90,15 +90,7 @@ ns.Raids = {
                         key = "unbinding_of_kithix",
                         instanceID = 3095,
                         journalInstanceID = 1324,
-                        bosses = {
-                            {
-                                key = "kithix",
-                                areaID = nil, -- TODO
-                                encounterID = 3513,
-                                journalEncounterID = 2896,
-                                icon = 537022, -- TODO
-                            },
-                        },
+                        bosses = {{key = "kithix", areaID = 17778, encounterID = 3513, journalEncounterID = 2896, icon = 8214194}},
                     },
                 },
             },

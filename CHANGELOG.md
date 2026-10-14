@@ -1,3 +1,6 @@
+#### 12.1.3
+### Kith'ix
+* Update icon.
 #### 12.1.2
 ### New boss
 * The Unbinding of Kith'ix: Kith'ix.

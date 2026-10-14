@@ -47,7 +47,7 @@ You set up the reminders for a boss once (which keyword to look for and what to 
 
 ## Sharing reminders
 
-You can share reminders with an export string, or send them straight to your group from the export window or the reminder editor. To share a whole raid, season or expansion at once, right-click it in the boss list and pick Send to group or Export. Before anything is sent you pick who gets it.
+You can share reminders with an export string, or send them straight to your group from the export window or the reminder editor. To share a whole raid, season or expansion at once, right-click it in the boss list and pick Send to group or Export. Before anything is sent, you pick who gets it.
 
 The Sharing tab also has a reminder check: pick all bosses, a raid or a single boss, choose the players, and you get a list of how many reminders each of them has per boss. Players without the addon show up as "no response".
 

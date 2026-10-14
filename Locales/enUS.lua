@@ -78,12 +78,16 @@ L["The profile \"%s\" already exists. Overwrite it?"] = true
 L["Overwrite"] = true
 L["Import into a new profile, or into the current profile \"%s\" (its settings and the reminders of the bosses above are replaced)."] =
   true
+L["There is nobody else online in your group."] = true
+L["Send to"] = true
+L["Choose the players. Everyone online in your group is selected."] = true
 L["New profile name"] = true
 L["Imported"] = true
 L["Create profile"] = true
 L["Into current"] = true
 L["Overwrite the settings of \"%s\"?"] = true
 L["Send to group"] = true
+L["Refresh"] = true
 
 -- Options/DisplayTab.lua
 L["None"] = true
@@ -177,6 +181,7 @@ L["Spec Position"] = true
 L["%s (%d selected)"] = true
 L["Select a class to choose its specializations."] = true
 L["Send"] = true
+L["Note: the keyword ends with a space, the note needs that space too."] = true
 
 -- Options/ProfilesTab.lua
 L["Overwrite the current profile with \"%s\"?"] = true
@@ -206,6 +211,13 @@ L["Automatically overwrite reminders when received from other players. When off,
 L["Receiving"] = true
 L["Group members can send you reminders from their export window or the reminder editor (\"Send\")."] = true
 L["Sharing"] = true
+L["%d of %d checked."] = true
+L["Checking: %d of %d"] = true
+L["reminders: %d"] = true
+L["no response"] = true
+L["Reminder check"] = true
+L["Check how many reminders players have for each boss. Only players with the addon can be checked."] = true
+L["Check"] = true
 
 -- Comms.lua
 L["You are not in a group."] = true
@@ -219,3 +231,4 @@ L["%s shared reminders you cannot import yet:\n%s\n\nPlease update Ready Check R
 L["Ignored reminders from %s: %s"] = true
 L["%s uses a newer version of Ready Check Reminder (%s); you have %s.\n\nTheir reminders are still imported when nothing conflicts. Consider updating."] =
   true
+L["Sent %d reminder(s) to %d player(s)."] = true

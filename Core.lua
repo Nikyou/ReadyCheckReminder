@@ -186,8 +186,7 @@ function addon:TestBoss(boss)
     end
 end
 
--- editor Test: real notes if they have something for us, mock note otherwise.
--- ignores enabled and load conditions, never shows warnings
+-- editor Test: real notes if they match, mock note if not. ignores enabled/load conditions, no warnings
 function addon:TestReminder(bossKey, reminder)
     local boss = ns.Database.GetBoss(bossKey or "")
     local ctx = boss and self:BuildContext(boss)
@@ -199,8 +198,7 @@ function addon:TestReminder(bossKey, reminder)
     ns.Display:ShowItems(items)
 end
 
--- Display tab Test: mock notes for every loaded reminder of one boss (all bosses if bossKey is nil).
--- zone and difficulty skipped, other load conditions still apply. second click hides it
+-- Display tab Test: mock notes for one boss (all if bossKey is nil). skips zone/difficulty, second click hides
 function addon:TestAll(bossKey)
     if ns.Display:IsShowing("displayTest") then
         ns.Display:HideItems()
@@ -248,8 +246,7 @@ end
 
 local scanTicker
 
--- /rcr where: print location info, then look for area IDs named like the current subzone.
--- one chunk per frame, a full scan in one go freezes the client
+-- /rcr where: location info, then scan for area IDs named like the subzone. one chunk per frame or the client freezes
 function addon:Where(from, to)
     local scan = self.db.global.scan
     if from and to and from >= 1 and to >= from then scan.from, scan.to = from, to end

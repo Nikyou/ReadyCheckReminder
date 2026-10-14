@@ -68,7 +68,7 @@ local SPEC_RANGE = {
 }
 LoadConditions.SPEC_RANGE = SPEC_RANGE
 
--- Sanitize drop specs whose class isn't selected
+-- Sanitize drops specs whose class isn't selected
 local CLASS_SPECS = {
     DEATHKNIGHT = {250, 251, 252},
     DEMONHUNTER = {577, 581, 1480},

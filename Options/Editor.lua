@@ -1,6 +1,5 @@
 -- Reminder editor: name, template fields, texts, load conditions, live preview.
 -- Typing just saves and refreshes the preview, only structural changes redo the layout.
-
 local _, ns = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("ReadyCheckReminder")
 local W, Style = ns.Widgets, ns.Style
@@ -8,20 +7,20 @@ local W, Style = ns.Widgets, ns.Style
 local Editor = {}
 ns.Editor = Editor
 
-local WIDTH = 456      -- content width
+local WIDTH = 456
 local PAD = 12
-local LABEL_GAP = 16   -- label height above an input
-local CHECK_ROW = 26   -- row height inside load condition boxes
+local LABEL_GAP = 16 -- label height above an input
+local CHECK_ROW = 26 -- row height inside load condition boxes
 local CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 
 local scroll, content, hint
-local body             -- everything under the preview, anchored to it so it moves when the preview grows
-local origin           -- what place() positions against: content (header) or body
+local body -- everything under the preview, anchored to it so it moves when the preview grows
+local origin -- what place() positions against: content (header) or body
 local previewTop, bodyHeight = 0, 0
 local reminder, bossKey
-local static = {}      -- every non-pooled widget, hidden before each layout
+local static = {} -- every non-pooled widget, hidden before each layout
 local lineRows, groupRows = {}, {}
-local loadBoxes = {}   -- difficulty / role / range: { title, box, checks }
+local loadBoxes = {} -- difficulty / role / range: { title, box, checks }
 local classChecks, specChecks = {}, {}
 local openSections = {} -- open class/spec sections, cleared when another reminder is opened
 
@@ -42,13 +41,9 @@ local function changed(structural)
     ns.RemindersTab.OnReminderChanged()
 end
 
-local function label(text, color, size)
-    return register(W.Label(content, text, size, color))
-end
+local function label(text, color, size) return register(W.Label(content, text, size, color)) end
 
-local function sectionTitle(text)
-    return label(text, Style.ACCENT, 13)
-end
+local function sectionTitle(text) return label(text, Style.ACCENT, 13) end
 
 local function classColor(classFile)
     local color = C_ClassColor.GetClassColor(classFile)
@@ -58,21 +53,17 @@ end
 
 -- keyword lines show the line as it's written in the note (soak1, soak2...), groups show "Line 1"
 local function lineLabel(line)
-    if reminder.type == "keywordLine" and (reminder.keyword or "") ~= "" then
-        return reminder.keyword .. line
-    end
+    if reminder.type == "keywordLine" and (reminder.keyword or "") ~= "" then return reminder.keyword .. line end
     return format(L["Line %d"], line)
 end
 
 local function refreshLineLabels()
-    for _, row in ipairs(lineRows) do
-        if row:IsShown() then row.label:SetText(lineLabel(row.line)) end
-    end
+    for _, row in ipairs(lineRows) do if row:IsShown() then row.label:SetText(lineLabel(row.line)) end end
 end
 
 -- hover help for the text boxes, TimelineReminders style: "{code} -> what it turns into"
 local ARROW = "|A:common-icon-forwardarrow:0:0|a"
-local EXAMPLE_VARS = { line = 2, pos = 3 }
+local EXAMPLE_VARS = {line = 2, pos = 3}
 
 local function fillTextTooltip(tip)
     tip:SetText(L["Reminder text"])
@@ -156,7 +147,7 @@ local w = {}
 
 -- titled box with two columns of checkboxes, like the M33kAuras multiselect load options
 local function createLoadBox(setName, title, values, labels)
-    local entry = { title = sectionTitle(title), box = register(W.Group(content)), checks = {} }
+    local entry = {title = sectionTitle(title), box = register(W.Group(content)), checks = {}}
     for _, value in ipairs(values) do
         local check = W.Chip(entry.box, labels[value], function(self)
             local set = reminder.load[setName]
@@ -167,7 +158,7 @@ local function createLoadBox(setName, title, values, labels)
         check.value = value
         entry.checks[#entry.checks + 1] = check
     end
-    loadBoxes[#loadBoxes + 1] = { setName = setName, entry = entry }
+    loadBoxes[#loadBoxes + 1] = {setName = setName, entry = entry}
 end
 
 local function createClassAndSpecSections()
@@ -213,20 +204,28 @@ local function createWidgets()
     -- header: buttons on the right, name and state on the left, preview under the buttons
     w.test = register(W.Button(content, L["Test"], nil, 22, function() ns.addon:TestReminder(bossKey, reminder) end))
     w.test:FitWidth()
-    w.send = register(W.Button(content, L["Send"], nil, 22, function() ns.Comms.SendReminders(bossKey, { reminder }) end))
+    w.send = register(W.Button(content, L["Send"], nil, 22, function()
+        local key, target = bossKey, reminder
+        ns.Options:ShowPlayerPicker(function(targets) ns.Comms.SendReminders(key, {target}, targets) end)
+    end))
     w.send:FitWidth()
     w.duplicate = register(W.Button(content, L["Duplicate"], nil, 22, function() ns.RemindersTab.DuplicateReminder(reminder) end))
     w.duplicate:FitWidth()
-    w.export = register(W.Button(content, L["Export"], nil, 22, function()
-        ns.Options:ShowExport(ns.ImportExport.ExportReminder(bossKey, reminder))
-    end))
+    w.export = register(W.Button(content, L["Export"], nil, 22,
+                                 function() ns.Options:ShowExport(ns.ImportExport.ExportReminder(bossKey, reminder)) end))
     w.export:FitWidth()
     w.delete = register(W.Button(content, L["Delete"], nil, 22, function() ns.RemindersTab.DeleteReminder(reminder) end))
     w.delete:FitWidth()
 
     w.nameLabel = label(L["Name"], Style.MUTED)
-    w.name = register(W.EditBox(content, 260, function(text) reminder.name = text; changed() end))
-    w.enabled = register(W.CheckBox(content, L["Enabled"], function(checked) reminder.enabled = checked; changed() end))
+    w.name = register(W.EditBox(content, 260, function(text)
+        reminder.name = text;
+        changed()
+    end))
+    w.enabled = register(W.CheckBox(content, L["Enabled"], function(checked)
+        reminder.enabled = checked;
+        changed()
+    end))
     w.typeLabel = label("", Style.MUTED, 11)
 
     w.previewTitle = sectionTitle(L["Preview"])
@@ -240,22 +239,49 @@ local function createWidgets()
     w.previewText:SetJustifyV("TOP")
 
     w.matchTitle = sectionTitle(L["Matching"])
-    w.keywordLabel = label(L["Keyword (a line starts with it, optionally followed by a number: soak, soak1, soak2...)"], Style.MUTED)
+    w.keywordLabel = label(L["Keyword (a line starts with it, optionally followed by a number: soak, soak1, soak2...)"],
+                           Style.MUTED)
     w.keywordLabel:SetWidth(WIDTH - 2 * PAD)
+    -- keywords are saved exactly as typed. a trailing space is easy to miss, so point it out
+    w.keywordNote = label("", Style.ACCENT, 11)
+    w.keywordNote:SetWidth(WIDTH - 2 * PAD)
+    local function updateKeywordNote()
+        local trailing = false
+        for _, value in ipairs({reminder.keyword, reminder.startKeyword, reminder.endKeyword}) do
+            if type(value) == "string" and value:find("%s$") then trailing = true end
+        end
+        w.keywordNote:SetText(trailing and L["Note: the keyword ends with a space, the note needs that space too."] or "")
+    end
+    Editor.UpdateKeywordNote = updateKeywordNote
     w.keyword = register(W.EditBox(content, 200, function(text)
-        reminder.keyword = text:gsub("%s", "")
+        reminder.keyword = text
         refreshLineLabels()
+        updateKeywordNote()
         changed()
     end))
     w.startLabel = label(L["Start keyword"], Style.MUTED)
-    w.start = register(W.EditBox(content, 200, function(text) reminder.startKeyword = text:gsub("%s", ""); changed() end))
+    w.start = register(W.EditBox(content, 200, function(text)
+        reminder.startKeyword = text;
+        updateKeywordNote();
+        changed()
+    end))
     w.endLabel = label(L["End keyword"], Style.MUTED)
-    w.stop = register(W.EditBox(content, 200, function(text) reminder.endKeyword = text:gsub("%s", ""); changed() end))
+    w.stop = register(W.EditBox(content, 200, function(text)
+        reminder.endKeyword = text;
+        updateKeywordNote();
+        changed()
+    end))
 
     w.textTitle = sectionTitle(L["Texts"])
-    w.perLine = register(W.CheckBox(content, L["One text per line"], function(checked) reminder.perLine = checked; changed(true) end))
+    w.perLine = register(W.CheckBox(content, L["One text per line"], function(checked)
+        reminder.perLine = checked;
+        changed(true)
+    end))
     w.textLabel = label("", Style.MUTED)
-    w.text = register(W.EditBox(content, WIDTH - 2 * PAD, function(text) reminder.text = text; changed() end))
+    w.text = register(W.EditBox(content, WIDTH - 2 * PAD, function(text)
+        reminder.text = text;
+        changed()
+    end))
     W.AddTooltip(w.text, fillTextTooltip)
     w.addLine = register(W.Button(content, L["Add line"], nil, 22, function()
         reminder.texts[ns.Reminders.MaxLine(reminder) + 1] = ""
@@ -272,7 +298,7 @@ local function createWidgets()
     w.groupsHelp = label(L["Select the groups for each text. Groups without a text show nothing."], Style.MUTED)
     w.groupsHelp:SetWidth(WIDTH - 2 * PAD)
     w.addGroup = register(W.Button(content, L["Add mapping"], nil, 22, function()
-        table.insert(reminder.groups, { groups = {}, text = "" })
+        table.insert(reminder.groups, {groups = {}, text = ""})
         changed(true)
     end))
     w.addGroup:FitWidth()
@@ -283,19 +309,18 @@ local function createWidgets()
     w.loadTitle = sectionTitle(L["Load conditions"])
     w.loadHelp = label(L["Nothing selected means any."], Style.MUTED)
     createLoadBox("difficulty", L["Instance Difficulty"], ns.LoadConditions.DIFFICULTIES,
-        { lfr = L["LFR"], normal = L["Normal"], heroic = L["Heroic"], mythic = L["Mythic"] })
+                  {lfr = L["LFR"], normal = L["Normal"], heroic = L["Heroic"], mythic = L["Mythic"]})
     createLoadBox("role", L["Spec Role"], ns.LoadConditions.ROLES, {
         TANK = (INLINE_TANK_ICON or "") .. " " .. L["Tank"],
         HEALER = (INLINE_HEALER_ICON or "") .. " " .. L["Healer"],
         DAMAGER = (INLINE_DAMAGER_ICON or "") .. " " .. L["Damage"],
     })
-    createLoadBox("range", L["Spec Position"], ns.LoadConditions.RANGES, { melee = L["Melee"], ranged = L["Ranged"] })
+    createLoadBox("range", L["Spec Position"], ns.LoadConditions.RANGES, {melee = L["Melee"], ranged = L["Ranged"]})
     createClassAndSpecSections()
 end
 
 local INNER = WIDTH - 2 * PAD
 
--- returns the box height
 local function layoutGrid(box, checks)
     local column = (INNER - 16) / 2
     for index, check in ipairs(checks) do
@@ -307,7 +332,7 @@ local function layoutGrid(box, checks)
     return math.ceil(#checks / 2) * CHECK_ROW + 10
 end
 
--- one per line, returns the box height
+-- one check per line
 local function layoutList(box, checks)
     local row = 0
     for _, check in ipairs(checks) do
@@ -346,7 +371,6 @@ local function layoutLoad(y)
         y = y + height + 10
     end
 
-    -- class
     w.classHeader:SetLabel(sectionLabel(L["Class"], reminder.load.class))
     w.classHeader:SetOpen(openSections.class)
     place(w.classHeader, PAD, y)
@@ -454,7 +478,7 @@ local function layoutHeader()
     w.typeLabel:SetText(ns.RemindersTab.TYPE_LABELS[reminder.type])
     place(w.typeLabel, PAD, y + 5)
     local right = WIDTH - PAD
-    for _, button in ipairs({ w.delete, w.export, w.duplicate, w.send, w.test }) do
+    for _, button in ipairs({w.delete, w.export, w.duplicate, w.send, w.test}) do
         right = right - button:GetWidth()
         place(button, right, y)
         right = right - 6
@@ -510,6 +534,9 @@ function Editor:Layout()
             w.stop:SetText(reminder.endKeyword or "")
             y = y + 32
         end
+        place(w.keywordNote, PAD, y - 6)
+        Editor.UpdateKeywordNote()
+        y = y + 12
         y = layoutTexts(y)
     end
 
@@ -529,9 +556,7 @@ local function updateWarnings()
             if found.line or found.pos then unsupported = true end
         end
     end
-    w.warning:SetText(unsupported
-        and L["{line} and {pos} only work in keyword reminders; here they are shown as written."]
-        or "")
+    w.warning:SetText(unsupported and L["{line} and {pos} only work in keyword reminders; here they are shown as written."] or "")
 end
 
 -- body is anchored under the preview, so a taller preview just pushes it down. no relayout
@@ -548,7 +573,7 @@ function Editor:RefreshPreview()
             if item.missingLine then
                 local warn = Style.WARN
                 lines[#lines + 1] = format("|cff%02x%02x%02x%s|r", warn[1] * 255, warn[2] * 255, warn[3] * 255,
-                    format(L["No text for line %d (%s)"], item.missingLine, item.reminderName))
+                                           format(L["No text for line %d (%s)"], item.missingLine, item.reminderName))
             else
                 lines[#lines + 1] = ns.Display.FormatText(ns.Wildcards.Expand(item.template, item.vars, ns.Wildcards.Lookup))
             end
@@ -591,10 +616,6 @@ function Editor:SetReminder(newBossKey, newReminder)
 end
 
 -- called when the settings window opens
-function Editor:ResetSections()
-    wipe(openSections)
-end
+function Editor:ResetSections() wipe(openSections) end
 
-function Editor:Refresh()
-    if content then self:Layout() end
-end
+function Editor:Refresh() if content then self:Layout() end end

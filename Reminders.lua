@@ -57,8 +57,7 @@ local function deepCopy(value)
 end
 Reminders.DeepCopy = deepCopy
 
--- name for a copy: "Soak 2" -> "Soak 3" (skipping numbers already taken in list),
--- nil when the name doesn't end in a number so the caller can fall back to "(copy)"
+-- "Soak 2" -> "Soak 3", skipping taken numbers. nil if there's no number (caller uses "(copy)")
 function Reminders.NextNumberedName(name, list)
     local prefix, number = (name or ""):match("^(.-)(%d+)$")
     if not prefix then return nil end
@@ -97,9 +96,10 @@ local function str(value, maxLen)
     return value
 end
 
+-- spaces are kept, even trailing ones ("P1 Soak " is a valid keyword), only tabs/newlines go
 local function keyword(value)
     value = str(value, 50)
-    return value and value:match("^%s*(.-)%s*$"):gsub("%s", "") or ""
+    return value and (value:gsub("[%c]", "")) or ""
 end
 
 local function sanitizeSet(source, allowed)

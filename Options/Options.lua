@@ -1,5 +1,4 @@
 -- settings window and the shared dialogs. tab files add themselves to ns.OptionsTabs
-
 local ADDON_NAME, ns = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("ReadyCheckReminder")
 local W, Style = ns.Widgets, ns.Style
@@ -97,7 +96,6 @@ local function create()
     selectTab(ns.OptionsTabs[1].key)
 end
 
--- puts the window back in the middle of the screen and opens it
 function Options:ResetPosition()
     if not frame then create() end
     frame:ClearAllPoints()
@@ -118,23 +116,15 @@ end
 
 function Options:RefreshActiveTab()
     if not frame or not frame:IsShown() then return end
-    for _, tab in ipairs(ns.OptionsTabs) do
-        if tab.key == activeTab and tab.Refresh then tab.Refresh() end
-    end
+    for _, tab in ipairs(ns.OptionsTabs) do if tab.key == activeTab and tab.Refresh then tab.Refresh() end end
 end
 
-function Options:OnProfileChanged()
-    self:RefreshActiveTab()
-end
+function Options:OnProfileChanged() self:RefreshActiveTab() end
 
-function Options:OnNameResolved()
-    if ns.Editor and frame and frame:IsShown() then ns.Editor:RefreshPreview() end
-end
+function Options:OnNameResolved() if ns.Editor and frame and frame:IsShown() then ns.Editor:RefreshPreview() end end
 
 -- Display calls this during the drag and on drop, the Display tab hooks onAnchorMoved
-function Options:OnAnchorMoved(x, y)
-    if self.onAnchorMoved then self.onAnchorMoved(x, y) end
-end
+function Options:OnAnchorMoved(x, y) if self.onAnchorMoved then self.onAnchorMoved(x, y) end end
 
 -- Dialogs
 
@@ -168,9 +158,8 @@ local function createDialog()
         for _, box in ipairs(dialog.list.boxes) do if box:IsShown() then box:SetChecked(true) end end
     end)
     dialog.all:FitWidth()
-    dialog.none = W.Button(dialog, L["None"], nil, 20, function()
-        for _, box in ipairs(dialog.list.boxes) do box:SetChecked(false) end
-    end)
+    dialog.none = W.Button(dialog, L["None"], nil, 20,
+                           function() for _, box in ipairs(dialog.list.boxes) do box:SetChecked(false) end end)
     dialog.none:FitWidth()
 
     dialog.buttons = {}
@@ -180,9 +169,7 @@ end
 
 local function checklistSelection(dialog, items)
     local selected = {}
-    for index, item in ipairs(items) do
-        if dialog.list.boxes[index]:GetChecked() then selected[#selected + 1] = item.key end
-    end
+    for index, item in ipairs(items) do if dialog.list.boxes[index]:GetChecked() then selected[#selected + 1] = item.key end end
     return selected
 end
 
@@ -323,20 +310,60 @@ function Options:ShowDialog(opts)
     dialog:Raise()
 end
 
-function Options:Confirm(message, buttons)
-    self:ShowDialog({ title = L["Please confirm"], message = message, buttons = buttons })
-end
+function Options:Confirm(message, buttons) self:ShowDialog({title = L["Please confirm"], message = message, buttons = buttons}) end
 
 function Options:ShowMessage(message)
-    self:ShowDialog({ title = L["Ready Check Reminder"], message = message, buttons = { { label = L["Close"] } } })
+    self:ShowDialog({title = L["Ready Check Reminder"], message = message, buttons = {{label = L["Close"]}}})
 end
 
 function Options:ShowExport(text)
     self:ShowDialog({
         title = L["Export"],
         message = L["Copy this string (Ctrl+C) and share it."],
-        input = { text = text, readOnly = true },
-        buttons = { { label = L["Close"] } },
+        input = {text = text, readOnly = true},
+        buttons = {{label = L["Close"]}},
+    })
+end
+
+-- who gets a share or a check. everyone online starts ticked. onConfirm gets nil targets if
+-- nobody was unticked (one group message), otherwise the picked names (whispers).
+-- unticked = { [name] = true }, lets a refresh keep the choices
+function Options:ShowPlayerPicker(onConfirm, title, confirmLabel, unticked)
+    local members = ns.Comms.GetGroupMembers()
+    if #members == 0 then
+        self:ShowMessage(IsInGroup() and L["There is nobody else online in your group."] or L["You are not in a group."])
+        return
+    end
+    local items = {}
+    for _, member in ipairs(members) do
+        local display = Ambiguate(member.name, "none")
+        local color = member.classFile and C_ClassColor.GetClassColor(member.classFile)
+        items[#items + 1] = {
+            key = member.name,
+            label = color and color:WrapTextInColorCode(display) or display,
+            checked = not (unticked and unticked[member.name]),
+        }
+    end
+    -- re-reads the group, keeping whoever was unticked unticked. new players come in ticked
+    local function refresh(selected)
+        local stillTicked, nowUnticked = {}, {}
+        for _, name in ipairs(selected) do stillTicked[name] = true end
+        for _, item in ipairs(items) do if not stillTicked[item.key] then nowUnticked[item.key] = true end end
+        self:ShowPlayerPicker(onConfirm, title, confirmLabel, nowUnticked)
+    end
+    self:ShowDialog({
+        title = title or L["Send to"],
+        message = L["Choose the players. Everyone online in your group is selected."],
+        checklist = items,
+        buttons = {
+            {
+                label = confirmLabel or L["Send"],
+                onClick = function(selected)
+                    if #selected == 0 then return end
+                    onConfirm(#selected < #items and selected or nil)
+                end,
+            }, {label = L["Refresh"], onClick = refresh}, {label = L["Cancel"]},
+        },
     })
 end
 
@@ -349,75 +376,80 @@ function Options:ShowReminderExport(bossKey)
     end
     local items = {}
     for _, reminder in ipairs(list) do
-        items[#items + 1] = { key = reminder, label = reminder.name ~= "" and reminder.name or L["(unnamed)"] }
+        items[#items + 1] = {key = reminder, label = reminder.name ~= "" and reminder.name or L["(unnamed)"]}
     end
     self:ShowDialog({
         title = L["Export reminders"],
         message = format(L["Choose the reminders of %s to export."], ns.Database.GetBossName(ns.Database.GetBoss(bossKey))),
         checklist = items,
         buttons = {
-            { label = L["Export"], onClick = function(selected)
-                if #selected == 0 then return end
-                if #selected == #list then
-                    self:ShowExport(ns.ImportExport.ExportBoss(bossKey))
-                else
-                    self:ShowExport(ns.ImportExport.ExportReminders(bossKey, selected))
-                end
-            end },
-            { label = L["Send to group"], onClick = function(selected)
-                if #selected == 0 then return end
-                if #selected == #list then
-                    ns.Comms.SendBoss(bossKey)
-                else
-                    ns.Comms.SendReminders(bossKey, selected)
-                end
-            end },
-            { label = L["Cancel"] },
+            {
+                label = L["Export"],
+                onClick = function(selected)
+                    if #selected == 0 then return end
+                    if #selected == #list then
+                        self:ShowExport(ns.ImportExport.ExportBoss(bossKey))
+                    else
+                        self:ShowExport(ns.ImportExport.ExportReminders(bossKey, selected))
+                    end
+                end,
+            }, {
+                label = L["Send to group"],
+                onClick = function(selected)
+                    if #selected == 0 then return end
+                    self:ShowPlayerPicker(function(targets)
+                        if #selected == #list then
+                            ns.Comms.SendBoss(bossKey, targets)
+                        else
+                            ns.Comms.SendReminders(bossKey, selected, targets)
+                        end
+                    end)
+                end,
+            }, {label = L["Cancel"]},
         },
     })
 end
 
--- paste, decode, show the summary, ask before overwriting anything
 function Options:ShowImport(onDone)
     local IE = ns.ImportExport
     self:ShowDialog({
         title = L["Import"],
         message = L["Paste a reminder string (Ctrl+V)."],
-        input = { text = "" },
+        input = {text = ""},
         buttons = {
-            { label = L["Import"], onClick = function(text)
-                local data, err = IE.Decode(text)
-                if data and data.kind == "profile" then
-                    err, data = L["This is a profile string. Import it in the Profiles tab."], nil
-                end
-                if not data then
-                    self:ShowMessage(err)
-                    return
-                end
-                local function apply(mode)
-                    IE.Apply(data, mode)
-                    Options.selectedBossKey = ns.ImportExport.FirstBoss(data).key
-                    if onDone then onDone(data) end
-                end
-                local summary = IE.Summary(data)
-                local buttons
-                if IE.WouldOverwrite(data) then
-                    local replaceLabel = (data.kind == "boss" or data.kind == "section") and L["Replace all"] or L["Replace existing"]
-                    buttons = {
-                        { label = replaceLabel, onClick = function() apply("replace") end },
-                        { label = L["Add as new"], onClick = function() apply("add") end },
-                        { label = L["Cancel"] },
-                    }
-                    summary = summary .. "\n\n" .. L["Some of this already exists. Replace it or add the import as new reminders?"]
-                else
-                    buttons = {
-                        { label = L["Import"], onClick = function() apply("add") end },
-                        { label = L["Cancel"] },
-                    }
-                end
-                self:Confirm(summary, buttons)
-            end },
-            { label = L["Cancel"] },
+            {
+                label = L["Import"],
+                onClick = function(text)
+                    local data, err = IE.Decode(text)
+                    if data and data.kind == "profile" then
+                        err, data = L["This is a profile string. Import it in the Profiles tab."], nil
+                    end
+                    if not data then
+                        self:ShowMessage(err)
+                        return
+                    end
+                    local function apply(mode)
+                        IE.Apply(data, mode)
+                        Options.selectedBossKey = ns.ImportExport.FirstBoss(data).key
+                        if onDone then onDone(data) end
+                    end
+                    local summary = IE.Summary(data)
+                    local buttons
+                    if IE.WouldOverwrite(data) then
+                        local replaceLabel = (data.kind == "boss" or data.kind == "section") and L["Replace all"]
+                                               or L["Replace existing"]
+                        buttons = {
+                            {label = replaceLabel, onClick = function() apply("replace") end},
+                            {label = L["Add as new"], onClick = function() apply("add") end}, {label = L["Cancel"]},
+                        }
+                        summary = summary .. "\n\n"
+                                    .. L["Some of this already exists. Replace it or add the import as new reminders?"]
+                    else
+                        buttons = {{label = L["Import"], onClick = function() apply("add") end}, {label = L["Cancel"]}}
+                    end
+                    self:Confirm(summary, buttons)
+                end,
+            }, {label = L["Cancel"]},
         },
     })
 end
@@ -428,12 +460,10 @@ function Options:ShowProfileExport()
     for _, boss in ns.Database.IterateBosses() do
         local count = #(ns.addon.db.profile.reminders[boss.key] or {})
         if count > 0 then
-            items[#items + 1] = { key = boss.key, label = format("%s (%d)", ns.Database.GetBossName(boss), count) }
+            items[#items + 1] = {key = boss.key, label = format("%s (%d)", ns.Database.GetBossName(boss), count)}
         end
     end
-    local function export(bossKeys)
-        self:ShowExport(ns.ImportExport.ExportProfile(bossKeys or {}))
-    end
+    local function export(bossKeys) self:ShowExport(ns.ImportExport.ExportProfile(bossKeys or {})) end
     if #items == 0 then
         export({})
         return
@@ -442,10 +472,7 @@ function Options:ShowProfileExport()
         title = L["Export profile"],
         message = L["Display and minimap settings are always included. Choose the bosses whose reminders to include."],
         checklist = items,
-        buttons = {
-            { label = L["Export"], onClick = export },
-            { label = L["Cancel"] },
-        },
+        buttons = {{label = L["Export"], onClick = export}, {label = L["Cancel"]}},
     })
 end
 
@@ -456,60 +483,62 @@ function Options:ShowProfileImport()
     self:ShowDialog({
         title = L["Import profile"],
         message = L["Paste a profile string (Ctrl+V)."],
-        input = { text = "" },
+        input = {text = ""},
         buttons = {
-            { label = L["Import"], onClick = function(text)
-                local data, err = IE.Decode(text)
-                if data and data.kind ~= "profile" then
-                    err, data = L["This is a reminder string. Import it in the Reminders tab."], nil
-                end
-                if not data then
-                    self:ShowMessage(err)
-                    return
-                end
-                local function intoNew(name)
-                    name = strtrim(name or "")
-                    if name == "" then
-                        self:ShowMessage(L["Enter a profile name."])
+            {
+                label = L["Import"],
+                onClick = function(text)
+                    local data, err = IE.Decode(text)
+                    if data and data.kind ~= "profile" then
+                        err, data = L["This is a reminder string. Import it in the Reminders tab."], nil
+                    end
+                    if not data then
+                        self:ShowMessage(err)
                         return
                     end
-                    local exists = false
-                    for _, existing in ipairs(db:GetProfiles()) do
-                        if existing == name then exists = true end
+                    local function intoNew(name)
+                        name = strtrim(name or "")
+                        if name == "" then
+                            self:ShowMessage(L["Enter a profile name."])
+                            return
+                        end
+                        local exists = false
+                        for _, existing in ipairs(db:GetProfiles()) do
+                            if existing == name then exists = true end
+                        end
+                        local function apply()
+                            db:SetProfile(name)
+                            if exists then db:ResetProfile() end
+                            IE.ApplyProfile(data)
+                        end
+                        if exists then
+                            self:Confirm(format(L["The profile \"%s\" already exists. Overwrite it?"], name),
+                                         {{label = L["Overwrite"], onClick = apply}, {label = L["Cancel"]}})
+                        else
+                            apply()
+                        end
                     end
-                    local function apply()
-                        db:SetProfile(name)
-                        if exists then db:ResetProfile() end
-                        IE.ApplyProfile(data)
-                    end
-                    if exists then
-                        self:Confirm(format(L["The profile \"%s\" already exists. Overwrite it?"], name), {
-                            { label = L["Overwrite"], onClick = apply },
-                            { label = L["Cancel"] },
-                        })
-                    else
-                        apply()
-                    end
-                end
-                self:ShowDialog({
-                    title = L["Import profile"],
-                    message = IE.ProfileSummary(data) .. "\n\n" .. format(
-                        L["Import into a new profile, or into the current profile \"%s\" (its settings and the reminders of the bosses above are replaced)."],
-                        db:GetCurrentProfile()),
-                    field = { label = L["New profile name"], text = L["Imported"] },
-                    buttons = {
-                        { label = L["Create profile"], onClick = intoNew },
-                        { label = L["Into current"], onClick = function()
-                            self:Confirm(format(L["Overwrite the settings of \"%s\"?"], db:GetCurrentProfile()), {
-                                { label = L["Overwrite"], onClick = function() IE.ApplyProfile(data) end },
-                                { label = L["Cancel"] },
-                            })
-                        end },
-                        { label = L["Cancel"] },
-                    },
-                })
-            end },
-            { label = L["Cancel"] },
+                    self:ShowDialog({
+                        title = L["Import profile"],
+                        message = IE.ProfileSummary(data) .. "\n\n" .. format(
+                          L["Import into a new profile, or into the current profile \"%s\" (its settings and the reminders of the bosses above are replaced)."],
+                          db:GetCurrentProfile()),
+                        field = {label = L["New profile name"], text = L["Imported"]},
+                        buttons = {
+                            {label = L["Create profile"], onClick = intoNew}, {
+                                label = L["Into current"],
+                                onClick = function()
+                                    self:Confirm(format(L["Overwrite the settings of \"%s\"?"], db:GetCurrentProfile()), {
+                                        {label = L["Overwrite"], onClick = function()
+                                            IE.ApplyProfile(data)
+                                        end}, {label = L["Cancel"]},
+                                    })
+                                end,
+                            }, {label = L["Cancel"]},
+                        },
+                    })
+                end,
+            }, {label = L["Cancel"]},
         },
     })
 end

@@ -1,5 +1,4 @@
--- AceDB profile management in the custom UI: switch, create, copy, delete, reset.
-
+-- profiles: switch, create, copy, delete, reset
 local _, ns = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("ReadyCheckReminder")
 local W, Style = ns.Widgets, ns.Style
@@ -14,9 +13,7 @@ local function profileItems(excludeCurrent)
     local profiles = db():GetProfiles()
     table.sort(profiles)
     for _, name in ipairs(profiles) do
-        if not excludeCurrent or name ~= current then
-            items[#items + 1] = { value = name, text = name }
-        end
+        if not excludeCurrent or name ~= current then items[#items + 1] = {value = name, text = name} end
     end
     return items
 end
@@ -57,10 +54,8 @@ local function create(parent)
     title(L["Copy from"])
     help(L["Copies the settings and reminders of another profile into the current one."])
     controls.copy = W.Dropdown(parent, WIDTH, function() return profileItems(true) end, function(value)
-        ns.Options:Confirm(format(L["Overwrite the current profile with \"%s\"?"], value), {
-            { label = L["Copy"], onClick = function() db():CopyProfile(value) end },
-            { label = L["Cancel"] },
-        })
+        ns.Options:Confirm(format(L["Overwrite the current profile with \"%s\"?"], value),
+                           {{label = L["Copy"], onClick = function() db():CopyProfile(value) end}, {label = L["Cancel"]}})
         controls.copy:SetValue(nil)
     end, L["Select a profile"])
     controls.copy:SetPoint("TOPLEFT", 0, -y)
@@ -69,11 +64,13 @@ local function create(parent)
     title(L["Delete a profile"])
     controls.delete = W.Dropdown(parent, WIDTH, function() return profileItems(true) end, function(value)
         ns.Options:Confirm(format(L["Delete the profile \"%s\"?"], value), {
-            { label = L["Delete"], onClick = function()
-                db():DeleteProfile(value)
-                ns.Options:RefreshActiveTab()
-            end },
-            { label = L["Cancel"] },
+            {
+                label = L["Delete"],
+                onClick = function()
+                    db():DeleteProfile(value)
+                    ns.Options:RefreshActiveTab()
+                end,
+            }, {label = L["Cancel"]},
         })
         controls.delete:SetValue(nil)
     end, L["Select a profile"])
@@ -82,10 +79,8 @@ local function create(parent)
 
     title(L["Reset"])
     local reset = W.Button(parent, L["Reset current profile"], nil, 22, function()
-        ns.Options:Confirm(L["Reset the current profile to defaults? Its reminders will be deleted."], {
-            { label = L["Reset"], onClick = function() db():ResetProfile() end },
-            { label = L["Cancel"] },
-        })
+        ns.Options:Confirm(L["Reset the current profile to defaults? Its reminders will be deleted."],
+                           {{label = L["Reset"], onClick = function() db():ResetProfile() end}, {label = L["Cancel"]}})
     end)
     reset:FitWidth()
     reset:SetPoint("TOPLEFT", 0, -y)
@@ -107,4 +102,4 @@ local function refresh()
     controls.delete:SetValue(nil)
 end
 
-table.insert(ns.OptionsTabs, { key = "profiles", label = L["Profiles"], Create = create, Refresh = refresh })
+table.insert(ns.OptionsTabs, {key = "profiles", label = L["Profiles"], Create = create, Refresh = refresh})

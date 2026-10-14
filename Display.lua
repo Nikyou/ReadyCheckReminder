@@ -77,8 +77,7 @@ local function getLine(index)
     return line
 end
 
--- DOWN: line 1 at the top of the anchor, the rest below it.
--- UP: last line at the bottom, earlier ones stacked above. reading order doesn't change either way.
+-- DOWN: first line at the top, rest below. UP: last line at the bottom, rest above. same reading order
 local function layoutLine(line, index, count)
     local db = settings()
     local justify = db.justify
@@ -94,9 +93,7 @@ local function layoutLine(line, index, count)
 end
 
 -- edit boxes save a typed | as ||, so undo that to let colour codes, textures, atlases and links work
-function Display.FormatText(text)
-    return (text:gsub("||", "|"))
-end
+function Display.FormatText(text) return (text:gsub("||", "|")) end
 
 local function itemText(item)
     if item.missingLine then return format(L["No text for line %d (%s)"], item.missingLine, item.reminderName), WARNING_COLOR end

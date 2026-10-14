@@ -149,11 +149,16 @@ function DB.GetCurrentSubzone()
     return text
 end
 
--- assumes one subzone per boss. if two bosses ever share a room this needs position or
--- kill state too
+-- one subzone per boss. if two ever share a room this needs position or kill state
 function DB.FindBossBySubzone(raid, subzone)
-    if not raid or not subzone then return nil end
-    for _, boss in ipairs(raid.bosses) do if boss.areaID and DB.GetAreaName(boss.areaID) == subzone then return boss end end
+    if not raid then return nil end
+    if subzone then
+        for _, boss in ipairs(raid.bosses) do
+            if boss.areaID and DB.GetAreaName(boss.areaID) == subzone then return boss end
+        end
+    end
+    -- a raid with a single boss doesn't need the room to match, every ready check is for that boss
+    if #raid.bosses == 1 then return raid.bosses[1] end
     return nil
 end
 

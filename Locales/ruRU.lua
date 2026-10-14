@@ -97,6 +97,11 @@ L["Create profile"] = "Создать профиль"
 L["Into current"] = "В текущий"
 L["Overwrite the settings of \"%s\"?"] = "Перезаписать настройки профиля \"%s\"?"
 L["Send to group"] = "Отправить группе"
+L["There is nobody else online in your group."] = "В вашей группе никого нет в сети."
+L["Send to"] = "Кому отправить"
+L["Refresh"] = "Обновить"
+L["Choose the players. Everyone online in your group is selected."] =
+  "Выберите игроков. По умолчанию выбраны все игроки в сети."
 
 -- Options/DisplayTab.lua
 L["None"] = "Нет"
@@ -199,6 +204,8 @@ L["%s (%d selected)"] = "%s (выбрано: %d)"
 L["Select a class to choose its specializations."] =
   "Выберите класс, чтобы выбрать его специализации."
 L["Send"] = "Отправить"
+L["Note: the keyword ends with a space, the note needs that space too."] =
+  "Ключевое слово заканчивается пробелом, в заметке он тоже должен быть."
 
 -- Options/ProfilesTab.lua
 L["Overwrite the current profile with \"%s\"?"] =
@@ -236,6 +243,14 @@ L["Receiving"] = "Получение"
 L["Group members can send you reminders from their export window or the reminder editor (\"Send\")."] =
   "Участники группы могут отправить вам напоминания из окна экспорта или редактора напоминаний (\"Отправить\")."
 L["Sharing"] = "Обмен"
+L["%d of %d checked."] = "Проверено: %d из %d."
+L["Checking: %d of %d"] = "Проверка: %d из %d"
+L["reminders: %d"] = "напоминаний: %d"
+L["no response"] = "нет отклика"
+L["Reminder check"] = "Проверка напоминаний"
+L["Check how many reminders players have for each boss. Only players with the addon can be checked."] =
+  "Проверка количества напоминаний у игроков по каждому боссу. Проверить можно только игроков с модификацией."
+L["Check"] = "Проверить"
 
 -- Comms.lua
 L["You are not in a group."] = "Вы не состоите в группе."
@@ -249,5 +264,6 @@ L["Newer version"] = "Новая версия"
 L["%s shared reminders you cannot import yet:\n%s\n\nPlease update Ready Check Reminder."] =
   "%s поделился напоминаниями, которые вы пока не можете импортировать:\n%s\n\nОбновите Ready Check Reminder."
 L["Ignored reminders from %s: %s"] = "Напоминания от %s проигнорированы: %s"
+L["Sent %d reminder(s) to %d player(s)."] = "Отправлено напоминаний: %d, игрокам: %d."
 L["%s uses a newer version of Ready Check Reminder (%s); you have %s.\n\nTheir reminders are still imported when nothing conflicts. Consider updating."] =
   "%s использует более новую версию Ready Check Reminder (%s), у вас %s.\n\nЕго напоминания всё равно импортируются, если нет конфликтов. Рекомендуем обновиться."

@@ -1,4 +1,4 @@
--- MRT/NSRT note reading and cleanup.
+-- MRT/NSRT note reading and cleanup
 local _, ns = ...
 ns = ns or {}
 

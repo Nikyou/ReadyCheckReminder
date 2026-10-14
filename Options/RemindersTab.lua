@@ -1,6 +1,4 @@
--- Reminders tab. Left: Expansion > Season > Raid > Boss tree. Middle: the boss's reminders
--- in display order, drag to reorder. Right: the editor.
-
+-- Reminders tab: boss tree, reminder list (drag to reorder), editor
 local _, ns = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("ReadyCheckReminder")
 local W, Style = ns.Widgets, ns.Style
@@ -11,11 +9,7 @@ ns.RemindersTab = Tab
 
 local TREE_WIDTH, LIST_WIDTH, ROW = 230, 250, 22
 
-Tab.TYPE_LABELS = {
-    keywordLine = L["Keyword line"],
-    keywordGroup = L["Keyword group"],
-    group = L["Group-based"],
-}
+Tab.TYPE_LABELS = {keywordLine = L["Keyword line"], keywordGroup = L["Keyword group"], group = L["Group-based"]}
 
 local tree, list, emptyHint
 local treeRows, listRows = {}, {}
@@ -24,14 +18,12 @@ local selectedReminderId
 local function selectedBossKey() return ns.Options.selectedBossKey end
 
 -- expanded tree sections are saved between sessions, everything starts collapsed
-local function expanded()
-    return ns.addon.db.global.ui.expanded
-end
+local function expanded() return ns.addon.db.global.ui.expanded end
 
 local function treeNodes()
     local nodes = {}
     local function add(depth, key, text, boss)
-        nodes[#nodes + 1] = { depth = depth, key = key, text = text, boss = boss }
+        nodes[#nodes + 1] = {depth = depth, key = key, text = text, boss = boss}
         return expanded()[key] == true
     end
     for _, expansion in ipairs(ns.Raids) do
@@ -85,20 +77,31 @@ local function openTreeMenu(row, node)
     local items
     if node.boss then
         items = {
-            { text = L["Send to group"], run = function() ns.Comms.SendBoss(node.key) end },
-            { text = L["Export"], run = function() ns.Options:ShowReminderExport(node.key) end },
+            {
+                text = L["Send to group"],
+                run = function()
+                    ns.Options:ShowPlayerPicker(function(targets) ns.Comms.SendBoss(node.key, targets) end)
+                end,
+            }, {text = L["Export"], run = function() ns.Options:ShowReminderExport(node.key) end},
         }
     else
         items = {
-            { text = L["Send to group"], run = function() ns.Comms.SendSection(node.key) end },
-            { text = L["Export"], run = function()
-                local text = ns.ImportExport.ExportSection(node.key)
-                if text then
-                    ns.Options:ShowExport(text)
-                else
-                    ns.Options:ShowMessage(L["There are no reminders in this section."])
-                end
-            end },
+            {
+                text = L["Send to group"],
+                run = function()
+                    ns.Options:ShowPlayerPicker(function(targets) ns.Comms.SendSection(node.key, targets) end)
+                end,
+            }, {
+                text = L["Export"],
+                run = function()
+                    local text = ns.ImportExport.ExportSection(node.key)
+                    if text then
+                        ns.Options:ShowExport(text)
+                    else
+                        ns.Options:ShowMessage(L["There are no reminders in this section."])
+                    end
+                end,
+            },
         }
     end
     W.OpenMenu(row, items, nil, function(item) item.run() end)
@@ -294,23 +297,23 @@ end
 function Tab.DeleteReminder(reminder)
     local name = reminder.name ~= "" and reminder.name or L["(unnamed)"]
     ns.Options:Confirm(format(L["Delete the reminder \"%s\"?"], name), {
-        { label = L["Delete"], onClick = function()
-            local bossKey = selectedBossKey()
-            local index = ns.Reminders.FindIndex(bossKey, reminder.id)
-            if index then table.remove(ns.Reminders.GetList(bossKey), index) end
-            local remaining = ns.Reminders.GetList(bossKey)
-            local nextReminder = remaining[math.min(index or 1, #remaining)]
-            Tab.RefreshTree()
-            Tab.SelectReminder(nextReminder and nextReminder.id)
-        end },
-        { label = L["Cancel"] },
+        {
+            label = L["Delete"],
+            onClick = function()
+                local bossKey = selectedBossKey()
+                local index = ns.Reminders.FindIndex(bossKey, reminder.id)
+                if index then table.remove(ns.Reminders.GetList(bossKey), index) end
+                local remaining = ns.Reminders.GetList(bossKey)
+                local nextReminder = remaining[math.min(index or 1, #remaining)]
+                Tab.RefreshTree()
+                Tab.SelectReminder(nextReminder and nextReminder.id)
+            end,
+        }, {label = L["Cancel"]},
     })
 end
 
 -- editor calls this when the name or enabled state changes
-function Tab.OnReminderChanged()
-    Tab.RefreshList()
-end
+function Tab.OnReminderChanged() Tab.RefreshList() end
 
 local function create(parent)
     local treePanel = W.Panel(parent)
@@ -332,14 +335,12 @@ local function create(parent)
         if not selectedBossKey() then return end
         local items = {}
         for _, reminderType in ipairs(ns.Reminders.TYPES) do
-            items[#items + 1] = { value = reminderType, text = Tab.TYPE_LABELS[reminderType] }
+            items[#items + 1] = {value = reminderType, text = Tab.TYPE_LABELS[reminderType]}
         end
         W.OpenMenu(self, items, nil, function(item) Tab.CreateReminder(item.value) end, 160)
     end)
     local import = W.Button(listPanel, L["Import"], 80, 24, function()
-        ns.Options:ShowImport(function(data)
-            Tab.SelectBoss(ns.ImportExport.FirstBoss(data).key)
-        end)
+        ns.Options:ShowImport(function(data) Tab.SelectBoss(ns.ImportExport.FirstBoss(data).key) end)
     end)
     import:SetPoint("LEFT", new, "RIGHT", 6, 0)
     local export = W.Button(listPanel, L["Export"], 88, 24, function()
@@ -361,9 +362,8 @@ local function create(parent)
 
     local hint = W.Label(listPanel, L["Drag to reorder. This is the display order."], 10)
     hint:SetPoint("BOTTOMLEFT", 0, 30)
-    local test = W.Button(listPanel, L["Test"], LIST_WIDTH, 24, function()
-        ns.addon:TestBoss(DB.GetBoss(selectedBossKey() or ""))
-    end)
+    local test = W.Button(listPanel, L["Test"], LIST_WIDTH, 24,
+                          function() ns.addon:TestBoss(DB.GetBoss(selectedBossKey() or "")) end)
     test:SetPoint("BOTTOMLEFT")
 
     local editorPanel = W.Panel(parent)
@@ -382,4 +382,4 @@ local function refresh()
     Tab.SelectReminder(selectedReminderId)
 end
 
-table.insert(ns.OptionsTabs, { key = "reminders", label = L["Reminders"], Create = create, Refresh = refresh })
+table.insert(ns.OptionsTabs, {key = "reminders", label = L["Reminders"], Create = create, Refresh = refresh})

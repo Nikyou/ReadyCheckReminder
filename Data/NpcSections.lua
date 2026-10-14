@@ -1,5 +1,4 @@
--- [npcID] = Encounter Journal section ID, optional.
--- {npc:<id>} tries the journal first since section titles don't need a server round trip.
+-- [npcID] = journal section ID, optional. {npc:} tries it first, no server round trip needed
 local _, ns = ...
 
 ns.NpcSections = {}

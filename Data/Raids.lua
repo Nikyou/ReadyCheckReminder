@@ -1,4 +1,4 @@
--- expansion > season > raid > boss. names aren't stored, they come from the journal.
+-- expansion > season > raid > boss. names come from the journal
 --
 -- raid:
 --   key
@@ -84,6 +84,19 @@ ns.Raids = {
                                 encounterID = 3379,
                                 journalEncounterID = 2849,
                                 icon = 3012069,
+                            },
+                        },
+                    }, {
+                        key = "unbinding_of_kithix",
+                        instanceID = 3095,
+                        journalInstanceID = 1324,
+                        bosses = {
+                            {
+                                key = "kithix",
+                                areaID = nil, -- TODO
+                                encounterID = 3513,
+                                journalEncounterID = 2896,
+                                icon = 537022, -- TODO
                             },
                         },
                     },

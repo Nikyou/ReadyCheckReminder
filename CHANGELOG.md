@@ -1,3 +1,12 @@
+#### 12.1.2
+### New boss
+* The Unbinding of Kith'ix: Kith'ix.
+### Sharing
+* You can now send reminders to individual players instead of the whole raid.
+* New reminder check in the Sharing tab: check how many reminders the whole group or picked players have, for all bosses, a raid or a single boss.
+### Keywords
+* Keywords keep their spaces, including trailing ones, so `P1 Soak ` matches lines like `P1 Soak 1: names`. The editor points out a trailing space since it's easy to miss.
+* Strings and shares with such keywords need 12.1.2 to import, everything else still imports on 12.1.1.
 #### 12.1.1
 ### Text replacements
 * Reminder texts now use `{...}` replacements instead of `%` wildcards:

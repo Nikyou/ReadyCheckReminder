@@ -1,8 +1,5 @@
--- {...} text replacements in reminder texts, in the style of TimelineReminders:
---   {spell:<id>} spell icon, {spellname:<id>} spell name, {npc:<id>} npc name,
---   {icon:<id or path>} / {texture:<id or path>}, raid markers ({rt1}, {star}, {ромб}...),
---   English class / spec names and {tank} {healer} {dps} as icons, {line} and {pos}.
--- Expand/Scan get the game lookups passed in so the tests can run them; the in-game ones are at the bottom.
+-- {...} replacements in reminder texts, like TimelineReminders: spell, spellname, npc, icon/texture,
+-- raid markers, class/spec/role icons, {line}, {pos}. game lookups get passed in so tests can run them
 local _, ns = ...
 ns = ns or {}
 
@@ -13,25 +10,32 @@ local format, lower = string.format, string.lower
 
 -- raid marker names in every client language, in {rt1}..{rt8} order
 local MARKER_NAMES = {
-    { "star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull" },
-    { "stern", "kreis", "diamant", "dreieck", "mond", "quadrat", "kreuz", "totenschädel" },
-    { "étoile", "cercle", "losange", "triangle", "lune", "carré", "croix", "crâne" },
-    { "stella", "cerchio", "rombo", "triangolo", "luna", "quadrato", "croce", "teschio" },
-    { "звезда", "круг", "ромб", "треугольник", "полумесяц", "квадрат", "крест", "череп" },
-    { "dorado", "naranja", "morado", "verde", "plateado", "azul", "rojo", "blanco" },
-    { "dourado", "laranja", "roxo", "verde", "prateado", "azul", "vermelho", "branco" },
+    {"star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull"},
+    {"stern", "kreis", "diamant", "dreieck", "mond", "quadrat", "kreuz", "totenschädel"},
+    {"étoile", "cercle", "losange", "triangle", "lune", "carré", "croix", "crâne"},
+    {"stella", "cerchio", "rombo", "triangolo", "luna", "quadrato", "croce", "teschio"},
+    {"звезда", "круг", "ромб", "треугольник", "полумесяц", "квадрат", "крест", "череп"},
+    {"dorado", "naranja", "morado", "verde", "plateado", "azul", "rojo", "blanco"},
+    {"dourado", "laranja", "roxo", "verde", "prateado", "azul", "vermelho", "branco"},
 }
 local markerIndex = {}
-for _, names in ipairs(MARKER_NAMES) do
-    for index, name in ipairs(names) do markerIndex[lower(name)] = index end
-end
+for _, names in ipairs(MARKER_NAMES) do for index, name in ipairs(names) do markerIndex[lower(name)] = index end end
 
 local MARKER_ICON = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t"
 
 local CLASSES = {
-    ["warrior"] = "warrior", ["paladin"] = "paladin", ["hunter"] = "hunter", ["rogue"] = "rogue",
-    ["priest"] = "priest", ["death knight"] = "deathknight", ["shaman"] = "shaman", ["mage"] = "mage",
-    ["warlock"] = "warlock", ["monk"] = "monk", ["druid"] = "druid", ["demon hunter"] = "demonhunter",
+    ["warrior"] = "warrior",
+    ["paladin"] = "paladin",
+    ["hunter"] = "hunter",
+    ["rogue"] = "rogue",
+    ["priest"] = "priest",
+    ["death knight"] = "deathknight",
+    ["shaman"] = "shaman",
+    ["mage"] = "mage",
+    ["warlock"] = "warlock",
+    ["monk"] = "monk",
+    ["druid"] = "druid",
+    ["demon hunter"] = "demonhunter",
     ["evoker"] = "evoker",
 }
 
@@ -41,22 +45,19 @@ local ROLE_ATLAS = {
     dps = "UI-LFG-RoleIcon-DPS-Micro-GroupFinder",
 }
 
--- English spec names. {Arms} works on its own, names shared by two classes need the class
--- too ({Frost Mage}, {Holy Priest}); every spec also works as "{Spec Class}"
+-- English spec names. shared ones need the class ({Frost Mage}), any spec works as {Spec Class}
 local SPECS = {
-    { 71, "Arms", "Warrior" }, { 72, "Fury", "Warrior" }, { 73, "Protection", "Warrior" },
-    { 65, "Holy", "Paladin" }, { 66, "Protection", "Paladin" }, { 70, "Retribution", "Paladin" },
-    { 253, "Beast Mastery", "Hunter" }, { 254, "Marksmanship", "Hunter" }, { 255, "Survival", "Hunter" },
-    { 259, "Assassination", "Rogue" }, { 260, "Outlaw", "Rogue" }, { 261, "Subtlety", "Rogue" },
-    { 256, "Discipline", "Priest" }, { 257, "Holy", "Priest" }, { 258, "Shadow", "Priest" },
-    { 250, "Blood", "Death Knight" }, { 251, "Frost", "Death Knight" }, { 252, "Unholy", "Death Knight" },
-    { 262, "Elemental", "Shaman" }, { 263, "Enhancement", "Shaman" }, { 264, "Restoration", "Shaman" },
-    { 62, "Arcane", "Mage" }, { 63, "Fire", "Mage" }, { 64, "Frost", "Mage" },
-    { 265, "Affliction", "Warlock" }, { 266, "Demonology", "Warlock" }, { 267, "Destruction", "Warlock" },
-    { 268, "Brewmaster", "Monk" }, { 269, "Windwalker", "Monk" }, { 270, "Mistweaver", "Monk" },
-    { 102, "Balance", "Druid" }, { 103, "Feral", "Druid" }, { 104, "Guardian", "Druid" }, { 105, "Restoration", "Druid" },
-    { 577, "Havoc", "Demon Hunter" }, { 581, "Vengeance", "Demon Hunter" }, { 1480, "Devourer", "Demon Hunter" },
-    { 1467, "Devastation", "Evoker" }, { 1468, "Preservation", "Evoker" }, { 1473, "Augmentation", "Evoker" },
+    {71, "Arms", "Warrior"}, {72, "Fury", "Warrior"}, {73, "Protection", "Warrior"}, {65, "Holy", "Paladin"},
+    {66, "Protection", "Paladin"}, {70, "Retribution", "Paladin"}, {253, "Beast Mastery", "Hunter"},
+    {254, "Marksmanship", "Hunter"}, {255, "Survival", "Hunter"}, {259, "Assassination", "Rogue"}, {260, "Outlaw", "Rogue"},
+    {261, "Subtlety", "Rogue"}, {256, "Discipline", "Priest"}, {257, "Holy", "Priest"}, {258, "Shadow", "Priest"},
+    {250, "Blood", "Death Knight"}, {251, "Frost", "Death Knight"}, {252, "Unholy", "Death Knight"}, {262, "Elemental", "Shaman"},
+    {263, "Enhancement", "Shaman"}, {264, "Restoration", "Shaman"}, {62, "Arcane", "Mage"}, {63, "Fire", "Mage"},
+    {64, "Frost", "Mage"}, {265, "Affliction", "Warlock"}, {266, "Demonology", "Warlock"}, {267, "Destruction", "Warlock"},
+    {268, "Brewmaster", "Monk"}, {269, "Windwalker", "Monk"}, {270, "Mistweaver", "Monk"}, {102, "Balance", "Druid"},
+    {103, "Feral", "Druid"}, {104, "Guardian", "Druid"}, {105, "Restoration", "Druid"}, {577, "Havoc", "Demon Hunter"},
+    {581, "Vengeance", "Demon Hunter"}, {1480, "Devourer", "Demon Hunter"}, {1467, "Devastation", "Evoker"},
+    {1468, "Preservation", "Evoker"}, {1473, "Augmentation", "Evoker"},
 }
 local specByName = {}
 do
@@ -74,14 +75,10 @@ end
 
 local QUESTION_MARK = "Interface\\Icons\\INV_Misc_QuestionMark"
 
-local function textureMarkup(texture)
-    return format("|T%s:0|t", texture)
-end
+local function textureMarkup(texture) return format("|T%s:0|t", texture) end
 
 -- spell icons cropped a little like the default UI does
-local function spellIconMarkup(texture)
-    return format("|T%s:0:0:0:0:64:64:5:59:5:59|t", texture)
-end
+local function spellIconMarkup(texture) return format("|T%s:0:0:0:0:64:64:5:59:5:59|t", texture) end
 
 -- one {...} token -> replacement, or nil to leave it as written
 local function replace(inner, vars, lookup)
@@ -121,17 +118,15 @@ local function replace(inner, vars, lookup)
     return nil
 end
 
--- vars = { line, pos }, nil for group reminders (then {line}/{pos} stay as written).
--- lookup = { npc, spell, spellIcon, specIcon } functions taking an ID. unknown tokens are left alone
+-- vars nil for group reminders, {line}/{pos} stay as written then. unknown tokens are left alone
 function Wildcards.Expand(text, vars, lookup)
     if type(text) ~= "string" or text == "" then return "" end
     return (text:gsub("{([^{}]+)}", function(inner) return replace(inner, vars, lookup) end))
 end
 
--- returns { npc = { [id] = true }, spell = { [id] = true }, line = bool, pos = bool }
--- spell holds the {spellname:} IDs, the ones that need a name loaded
+-- spell only holds the {spellname:} IDs, those need a name loaded
 function Wildcards.Scan(text)
-    local found = { npc = {}, spell = {}, line = false, pos = false }
+    local found = {npc = {}, spell = {}, line = false, pos = false}
     if type(text) ~= "string" then return found end
     for inner in text:gmatch("{([^{}]+)}") do
         local key, id = inner:match("^(%a+):(%d+)$")
@@ -179,8 +174,8 @@ local function nameFromJournal(npcId)
     return nil
 end
 
--- cache, then journal section, then tooltip. the tooltip is often empty on first ask for an
--- unseen npc, so retry a few times and refresh the display when it shows up. misses aren't cached
+-- cache, journal section, then tooltip. tooltip is often empty for a new npc so retry a few times.
+-- misses aren't cached
 function Wildcards.GetNpcName(npcId)
     local cache = cacheTable("npc")
     local name = cache[npcId]
@@ -227,9 +222,7 @@ function Wildcards.GetSpellName(spellId)
     return nil
 end
 
-local function usableIcon(icon)
-    return icon ~= nil and not issecretvalue(icon) and icon ~= 0 and icon or nil
-end
+local function usableIcon(icon) return icon ~= nil and not issecretvalue(icon) and icon ~= 0 and icon or nil end
 
 Wildcards.Lookup = {
     npc = function(id) return Wildcards.GetNpcName(id) end,

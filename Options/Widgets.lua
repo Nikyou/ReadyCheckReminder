@@ -1,14 +1,12 @@
--- small widget helpers for the settings UI. all stock Blizzard templates (same ones the
--- Settings / Edit Mode panels use) plus the Menu system, panels borrow the M33kAuras backdrop.
-
+-- widget helpers, stock Blizzard templates and menus. panels use the M33kAuras backdrop
 local _, ns = ...
 
 local Style = {
-    ACCENT = { NORMAL_FONT_COLOR:GetRGBA() },            -- gold, titles and selections
-    TEXT = { HIGHLIGHT_FONT_COLOR:GetRGBA() },
-    MUTED = { GRAY_FONT_COLOR:GetRGBA() },
-    WARN = { RED_FONT_COLOR:GetRGBA() },
-    SELECTED = { 1, 0.82, 0, 0.25 },                     -- tint for the selected row
+    ACCENT = {NORMAL_FONT_COLOR:GetRGBA()}, -- gold, titles and selections
+    TEXT = {HIGHLIGHT_FONT_COLOR:GetRGBA()},
+    MUTED = {GRAY_FONT_COLOR:GetRGBA()},
+    WARN = {RED_FONT_COLOR:GetRGBA()},
+    SELECTED = {1, 0.82, 0, 0.25}, -- tint for the selected row
     HIGHLIGHT_TEXTURE = "Interface\\QuestFrame\\UI-QuestTitleHighlight",
 }
 ns.Style = Style
@@ -37,8 +35,10 @@ end
 local GROUP_BACKDROP = {
     bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 16, edgeSize = 16,
-    insets = { left = 3, right = 3, top = 5, bottom = 3 },
+    tile = true,
+    tileSize = 16,
+    edgeSize = 16,
+    insets = {left = 3, right = 3, top = 5, bottom = 3},
 }
 
 function W.Group(parent)
@@ -85,9 +85,7 @@ function W.CheckBox(parent, text, onChange)
     local box = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
     box:SetSize(24, 24)
     box.Text:SetFontObject("GameFontHighlight")
-    box:SetScript("OnClick", function(self)
-        if onChange then onChange(self:GetChecked()) end
-    end)
+    box:SetScript("OnClick", function(self) if onChange then onChange(self:GetChecked()) end end)
     function box:SetLabel(value)
         self.Text:SetText(value)
         self:SetHitRectInsets(0, -(self.Text:GetStringWidth() + 4), 0, 0)
@@ -177,9 +175,7 @@ function W.EditBox(parent, width, onChange)
     edit:SetAutoFocus(false)
     edit:SetFontObject("ChatFontNormal")
     edit:SetScript("OnEnterPressed", edit.ClearFocus)
-    edit:SetScript("OnTextChanged", function(self, userInput)
-        if userInput and onChange then onChange(self:GetText()) end
-    end)
+    edit:SetScript("OnTextChanged", function(self, userInput) if userInput and onChange then onChange(self:GetText()) end end)
     return edit
 end
 
@@ -233,16 +229,16 @@ function W.Slider(parent, text, minValue, maxValue, step, width, onChange)
     slider:SetPoint("BOTTOMRIGHT", -40, 0)
     slider:SetHeight(20)
     local formatters = {
-        [MinimalSliderWithSteppersMixin.Label.Right] = CreateMinimalSliderFormatter(
-            MinimalSliderWithSteppersMixin.Label.Right,
-            function(value) return step < 1 and format("%.1f", value) or tostring(math.floor(value + 0.5)) end),
+        [MinimalSliderWithSteppersMixin.Label.Right] = CreateMinimalSliderFormatter(MinimalSliderWithSteppersMixin.Label.Right,
+                                                                                    function(value)
+            return step < 1 and format("%.1f", value) or tostring(math.floor(value + 0.5))
+        end),
     }
     slider:Init(minValue, minValue, maxValue, (maxValue - minValue) / step, formatters)
 
     local updating = false
-    slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        if not updating and onChange then onChange(value) end
-    end, holder)
+    slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged,
+                            function(_, value) if not updating and onChange then onChange(value) end end, holder)
 
     function holder:SetValue(value)
         updating = true
@@ -280,9 +276,7 @@ end
 -- items are { value, text }, onSelect gets the whole item
 function W.OpenMenu(anchor, items, _, onSelect)
     MenuUtil.CreateContextMenu(anchor, function(_, root)
-        for _, item in ipairs(items) do
-            root:CreateButton(item.text, function() onSelect(item) end)
-        end
+        for _, item in ipairs(items) do root:CreateButton(item.text, function() onSelect(item) end) end
     end)
 end
 
@@ -303,9 +297,7 @@ function W.Dropdown(parent, width, getItems, onSelect, placeholder)
         for _, item in ipairs(items) do
             local radio = root:CreateRadio(item.text, isSelected, setSelected, item.value)
             if item.font then
-                radio:AddInitializer(function(button)
-                    button.fontString:SetFontObject(previewFont(item.font))
-                end)
+                radio:AddInitializer(function(button) button.fontString:SetFontObject(previewFont(item.font)) end)
             end
         end
         if #items > 20 then root:SetScrollMode(MENU_SCROLL_EXTENT) end

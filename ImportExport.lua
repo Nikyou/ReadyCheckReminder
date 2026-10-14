@@ -3,8 +3,7 @@
 -- payload.kind:
 --   "reminders"  { boss = bossKey, reminders = { ... } }  some reminders of one boss
 --   "boss"       { boss = bossKey, reminders = { ... } }  the whole list of one boss
---   "section"    { section = key, bosses = { [bossKey] = { ... } } }  whole lists of every boss with
---                reminders under an expansion / season / raid
+--   "section"    { section = key, bosses = { [bossKey] = { ... } } }  every non-empty boss in a section
 --   "profile"    { settings = { display, minimap }, reminders = { [bossKey] = { ... } } }
 -- every payload also has:
 --   addonVersion  version that made it, like "12.1.0"
@@ -51,10 +50,28 @@ end
 
 function ImportExport.GetAddonVersion() return C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") end
 
+-- 12.1.1 strips spaces out of keywords on import, so strings with "P1 Soak " style keywords
+-- need 12.1.2. everything else stays readable by MIN_READER_VERSION
+local SPACED_KEYWORD_READER = "12.1.2"
+
+local function hasSpacedKeyword(payload)
+    local lists = {}
+    if payload.reminders and payload.kind ~= "profile" then lists[1] = payload.reminders end
+    for _, list in pairs(payload.kind == "profile" and payload.reminders or payload.bosses or {}) do lists[#lists + 1] = list end
+    for _, list in ipairs(lists) do
+        for _, reminder in ipairs(list) do
+            for _, key in ipairs({"keyword", "startKeyword", "endKeyword"}) do
+                if type(reminder[key]) == "string" and reminder[key]:find("%s") then return true end
+            end
+        end
+    end
+    return false
+end
+
 function ImportExport.Encode(payload)
     payload.v = PAYLOAD_VERSION
     payload.addonVersion = payload.addonVersion or ImportExport.GetAddonVersion()
-    payload.minVersion = payload.minVersion or MIN_READER_VERSION
+    payload.minVersion = payload.minVersion or (hasSpacedKeyword(payload) and SPACED_KEYWORD_READER or MIN_READER_VERSION)
     local serialized = LibSerialize:Serialize(payload)
     local compressed = LibDeflate:CompressDeflate(serialized, {level = 9})
     return PREFIX .. LibDeflate:EncodeForPrint(compressed)
@@ -65,14 +82,11 @@ local encode = ImportExport.Encode
 
 function ImportExport.ExportReminder(bossKey, reminder) return ImportExport.ExportReminders(bossKey, {reminder}) end
 
--- "reminders" kind: gets added to the boss's list on import
 function ImportExport.ExportReminders(bossKey, reminders)
     return encode({kind = "reminders", boss = bossKey, reminders = reminders})
 end
 
--- "boss" kind: the importer can replace their whole list with it
--- every boss with reminders under an expansion/season/raid key. bosses without reminders are
--- left out so the receiver's lists for them aren't wiped. returns nil when there's nothing
+-- empty bosses are left out so the receiver's lists for them don't get wiped. nil if nothing to send
 function ImportExport.ExportSection(sectionKey)
     local bosses, count = {}, 0
     for _, boss in ipairs(ns.Database.GetSectionBosses(sectionKey) or {}) do
@@ -222,7 +236,7 @@ function ImportExport.DecodePayload(payload)
     if payload.kind == "section" then
         if type(payload.bosses) ~= "table" then return nil, L["The import string is damaged."] end
         local data = {kind = "section", section = payload.section, bosses = {}, skippedBosses = 0}
-        -- keep the boss order of the tree, unknown bosses (e.g. a newer raid) are skipped
+        -- keep the boss order of the tree, unknown bosses (from a newer raid, say) are skipped
         for _, boss in ns.Database.IterateBosses() do
             local list = payload.bosses[boss.key]
             if list ~= nil then

@@ -1,5 +1,4 @@
 -- note lines + reminders in, display items out.
--- no WoW API in here (roster and nickname lookup get passed in) so tests/ can load it.
 local _, ns = ...
 ns = ns or {}
 
@@ -22,25 +21,22 @@ function Parser.Tokenize(line)
     return tokens
 end
 
-local function stripColon(word) return (gsub(word, ":$", "")) end
-
--- keyword with an optional number glued on. returns matched, lineNumber:
--- "soak" gives true, nil / "soak2" gives true, 2 / "grimsoak1" gives false
-function Parser.MatchKeyword(word, keyword)
-    if not word or not keyword or keyword == "" then return false end
-    word = stripColon(word)
+-- keyword, optional number, then colon/space/end of line. "soak" matches "soak2" but not "soakers".
+-- keywords keep trailing spaces ("P1 Soak " is valid). returns matched, lineNumber or nil, rest
+function Parser.MatchKeywordLine(line, keyword)
+    if not line or not keyword or keyword == "" then return false end
+    local text = gsub(gsub(line, "{[^}]*}", " "), "^%s+", "")
     local len = #keyword
-    if #word < len or lower(sub(word, 1, len)) ~= lower(keyword) then return false end
-    local rest = sub(word, len + 1)
-    if rest == "" then return true, nil end
-    if find(rest, "^%d+$") then return true, tonumber(rest) end
-    return false
+    if lower(sub(text, 1, len)) ~= lower(keyword) then return false end
+    local digits, after = match(sub(text, len + 1), "^(%d*)(.*)$")
+    if after ~= "" and not find(after, "^[:%s,;]") then return false end
+    return true, tonumber(digits), (gsub(after, "^:", ""))
 end
 
--- whole word only, for keyword groups
-function Parser.IsKeyword(word, keyword)
-    if not word or not keyword or keyword == "" then return false end
-    return lower(stripColon(word)) == lower(keyword)
+-- start/end lines of a keyword group: the keyword with no number after it
+function Parser.IsKeywordLine(line, keyword)
+    local matched, number = Parser.MatchKeywordLine(line, keyword)
+    return matched and number == nil
 end
 
 local function splitName(name)
@@ -49,9 +45,8 @@ local function splitName(name)
     return name, nil
 end
 
--- members: { name = "Name" or "Name-Realm", subgroup = n }. names without a realm get playerRealm.
--- nicknameLookup(token) returns { ["Name-Realm"] = true } or nil; pass nil when nicknames are off.
--- names match case-insensitively
+-- members = { name, subgroup }, names without a realm get playerRealm. case-insensitive.
+-- nicknameLookup(token) -> { ["Name-Realm"] = true } or nil, itself nil when nicknames are off
 function Parser.NewRoster(members, playerName, playerRealm, nicknameLookup)
     local roster = {byFull = {}, byShort = {}, player = nil, nicknameLookup = nicknameLookup, cache = {}}
     for _, member in ipairs(members or {}) do
@@ -80,8 +75,7 @@ local function lookupName(roster, name)
     return nil
 end
 
--- the nickname goes to NSRT exactly as written, only the character names it returns
--- are matched case-insensitively
+-- nickname goes to NSRT as written, only the names it returns are matched case-insensitively
 
 local function resolveNickname(roster, token)
     local chars = roster.nicknameLookup and roster.nicknameLookup(token)
@@ -135,18 +129,17 @@ function Parser.FindKeywordLineMatches(keyword, lines, roster)
     local matches = {}
     if not keyword or keyword == "" then return matches end
     for _, line in ipairs(lines) do
-        local tokens = Parser.Tokenize(line)
-        local ok, number = Parser.MatchKeyword(tokens[1], keyword)
+        local ok, number, rest = Parser.MatchKeywordLine(line, keyword)
         if ok then
-            local pos = findPlayer(roster, tokens, 2)
+            local pos = findPlayer(roster, Parser.Tokenize(rest), 1)
             if pos then matches[#matches + 1] = {line = number or 1, hasNumber = number ~= nil, pos = pos} end
         end
     end
     return matches
 end
 
--- start keyword, lines of names, end keyword. line numbers restart at 1 in each block and
--- skip empty lines. missing end keyword = block runs to the end of the note
+-- start keyword, name lines, end keyword. numbering restarts per block, skips empty lines.
+-- no end keyword = runs to the end of the note
 function Parser.FindKeywordGroupMatches(startKeyword, endKeyword, lines, roster)
     local matches = {}
     if not startKeyword or startKeyword == "" or not endKeyword or endKeyword == "" then return matches end
@@ -154,8 +147,8 @@ function Parser.FindKeywordGroupMatches(startKeyword, endKeyword, lines, roster)
     for _, line in ipairs(lines) do
         local tokens = Parser.Tokenize(line)
         if not inBlock then
-            if Parser.IsKeyword(tokens[1], startKeyword) then inBlock, index = true, 0 end
-        elseif Parser.IsKeyword(tokens[1], endKeyword) then
+            if Parser.IsKeywordLine(line, startKeyword) then inBlock, index = true, 0 end
+        elseif Parser.IsKeywordLine(line, endKeyword) then
             inBlock = false
         elseif #tokens > 0 then
             index = index + 1
@@ -183,8 +176,7 @@ local function textForMatch(reminder, m)
 end
 
 -- ctx = { mrtLines, nsrtLines, roster }
--- items are { template, vars = { line, pos } or nil }, or { missingLine, reminderName } as a
--- warning when the matched line has no per-line text
+-- items: { template, vars = { line, pos } or nil }, or { missingLine, reminderName } if the line has no text
 function Parser.EvaluateReminder(reminder, ctx)
     local items = {}
     if reminder.type == Parser.TYPE_GROUP then
@@ -241,8 +233,7 @@ local function definedLines(reminder)
     return lines
 end
 
--- fake note with the player on every line that has a text, so a test shows each text once
--- and never trips the missing line warning
+-- fake note with the player on every line that has a text, so each shows once and no warnings
 function Parser.BuildMockLines(reminder, playerName)
     local lines = {}
     if reminder.type == Parser.TYPE_KEYWORD_LINE then

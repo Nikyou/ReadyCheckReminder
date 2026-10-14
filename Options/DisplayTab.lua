@@ -1,5 +1,4 @@
 -- anchor, font and layout settings, display time, minimap toggle and the Test button
-
 local _, ns = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("ReadyCheckReminder")
 local LSM = LibStub("LibSharedMedia-3.0")
@@ -9,9 +8,7 @@ local controls = {}
 local ALL_BOSSES = "*"
 local testBossKey = ALL_BOSSES
 
-local function db()
-    return ns.addon.db.profile.display
-end
+local function db() return ns.addon.db.profile.display end
 
 local function setDisplay(key, value)
     db()[key] = value
@@ -21,30 +18,22 @@ end
 local function fontItems()
     local items = {}
     for _, name in ipairs(LSM:List("font")) do
-        items[#items + 1] = { value = name, text = name, font = LSM:Fetch("font", name, true) }
+        items[#items + 1] = {value = name, text = name, font = LSM:Fetch("font", name, true)}
     end
     return items
 end
 
 local OUTLINES = {
-    { value = "NONE", text = L["None"] },
-    { value = "OUTLINE", text = L["Outline"] },
-    { value = "THICKOUTLINE", text = L["Thick outline"] },
+    {value = "NONE", text = L["None"]}, {value = "OUTLINE", text = L["Outline"]},
+    {value = "THICKOUTLINE", text = L["Thick outline"]},
 }
 
-local JUSTIFY = {
-    { value = "LEFT", text = L["Left"] },
-    { value = "CENTER", text = L["Center"] },
-    { value = "RIGHT", text = L["Right"] },
-}
+local JUSTIFY = {{value = "LEFT", text = L["Left"]}, {value = "CENTER", text = L["Center"]}, {value = "RIGHT", text = L["Right"]}}
 
-local GROWTH = {
-    { value = "DOWN", text = L["Down"] },
-    { value = "UP", text = L["Up"] },
-}
+local GROWTH = {{value = "DOWN", text = L["Down"]}, {value = "UP", text = L["Up"]}}
 
 local function bossItems()
-    local items = { { value = ALL_BOSSES, text = L["All bosses"] } }
+    local items = {{value = ALL_BOSSES, text = L["All bosses"]}}
     for _, boss in ns.Database.IterateBosses() do
         local raid = ns.Database.GetRaidOfBoss(boss)
         items[#items + 1] = {
@@ -79,7 +68,10 @@ local function coordinateBox(parent, key)
         end
         self:SetText(tostring(display[key]))
     end
-    box:SetScript("OnEnterPressed", function(self) apply(self) self:ClearFocus() end)
+    box:SetScript("OnEnterPressed", function(self)
+        apply(self)
+        self:ClearFocus()
+    end)
     box:HookScript("OnEditFocusLost", apply)
     return box
 end
@@ -112,7 +104,8 @@ local function create(parent)
     controls.size = W.Slider(parent, L["Font size"], 8, 64, 1, COLUMN, function(value) setDisplay("fontSize", value) end)
     controls.size:SetPoint("TOPLEFT", 0, -204)
     labeled(parent, L["Outline"], 0, -248)
-    controls.outline = W.Dropdown(parent, COLUMN, function() return OUTLINES end, function(value) setDisplay("outline", value) end)
+    controls.outline =
+      W.Dropdown(parent, COLUMN, function() return OUTLINES end, function(value) setDisplay("outline", value) end)
     controls.outline:SetPoint("TOPLEFT", 0, -264)
     labeled(parent, L["Text alignment"], 0, -294)
     controls.justify = W.Dropdown(parent, COLUMN, function() return JUSTIFY end, function(value) setDisplay("justify", value) end)
@@ -126,20 +119,22 @@ local function create(parent)
     -- Behaviour and test (right column)
     local right = COLUMN + 60
     sectionTitle(parent, L["Behaviour"], right, 0)
-    controls.duration = W.Slider(parent, L["Display duration (seconds)"], 3, 60, 1, COLUMN, function(value) setDisplay("duration", value) end)
+    controls.duration = W.Slider(parent, L["Display duration (seconds)"], 3, 60, 1, COLUMN,
+                                 function(value) setDisplay("duration", value) end)
     controls.duration:SetPoint("TOPLEFT", right, -26)
     controls.minimap = W.CheckBox(parent, L["Show minimap button"], function(checked) ns.addon:SetMinimapButtonShown(checked) end)
     controls.minimap:SetPoint("TOPLEFT", right, -76)
 
     sectionTitle(parent, L["Test"], right, -120)
-    local testHelp = W.Label(parent, L["Shows every loaded reminder with a test note that puts you on each of its lines. Zone and difficulty are ignored."], nil, Style.MUTED)
+    local testHelp = W.Label(parent,
+                             L["Shows every loaded reminder with a test note that puts you on each of its lines. Zone and difficulty are ignored."],
+                             nil, Style.MUTED)
     testHelp:SetPoint("TOPLEFT", right, -144)
     testHelp:SetWidth(COLUMN)
     controls.boss = W.Dropdown(parent, COLUMN, bossItems, function(value) testBossKey = value end)
     controls.boss:SetPoint("TOPLEFT", right, -184)
-    local testButton = W.Button(parent, L["Test"], 100, 24, function()
-        ns.addon:TestAll(testBossKey ~= ALL_BOSSES and testBossKey or nil)
-    end)
+    local testButton = W.Button(parent, L["Test"], 100, 24,
+                                function() ns.addon:TestAll(testBossKey ~= ALL_BOSSES and testBossKey or nil) end)
     testButton:SetPoint("TOPLEFT", right, -214)
 
     ns.Options.onAnchorMoved = function(x, y)
@@ -164,4 +159,4 @@ local function refresh()
     controls.boss:SetValue(testBossKey)
 end
 
-table.insert(ns.OptionsTabs, { key = "display", label = L["Display"], Create = create, Refresh = refresh })
+table.insert(ns.OptionsTabs, {key = "display", label = L["Display"], Create = create, Refresh = refresh})

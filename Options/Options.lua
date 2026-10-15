@@ -336,11 +336,9 @@ function Options:ShowPlayerPicker(onConfirm, title, confirmLabel, unticked)
     end
     local items = {}
     for _, member in ipairs(members) do
-        local display = Ambiguate(member.name, "none")
-        local color = member.classFile and C_ClassColor.GetClassColor(member.classFile)
         items[#items + 1] = {
             key = member.name,
-            label = color and color:WrapTextInColorCode(display) or display,
+            label = ns.Comms.PlayerName(member.name, member.classFile),
             checked = not (unticked and unticked[member.name]),
         }
     end

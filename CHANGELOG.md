@@ -1,3 +1,6 @@
+#### 12.1.5
+### Sharing
+* New option "Use NSRT nicknames" (Sharing tab, on by default): players are shown by their Northern Sky Raid Tools nickname in the player list, the reminder check and share messages.
 #### 12.1.4
 ### Display
 * New option "Cyrillic Friz Quadrata" (Display tab, on by default): reminders in Friz Quadrata now show Cyrillic on non-Russian clients. Some accented letters like é or ö may not show with it, turn it off if you need them.

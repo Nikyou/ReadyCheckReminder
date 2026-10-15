@@ -253,6 +253,9 @@ L["Receive reminder updates only from guild members."] =
 L["Overwrite by default"] = "Перезаписывать без подтверждения"
 L["Automatically overwrite reminders when received from other players. When off, you are asked first."] =
   "Автоматически перезаписывать напоминания, полученные от других игроков. Если отключено, сначала будет задан вопрос."
+L["Use NSRT nicknames"] = "Использовать никнеймы NSRT"
+L["Shows players by their Northern Sky Raid Tools nickname when sending, in the reminder check and in messages. Does nothing without NSRT."] =
+  "Показывать игроков по никнеймам из Northern Sky Raid Tools при отправке, в проверке напоминаний и в сообщениях. Без NSRT ни на что не влияет."
 L["Receiving"] = "Получение"
 L["Group members can send you reminders from their export window or the reminder editor (\"Send\")."] =
   "Участники группы могут отправить вам напоминания из окна экспорта или редактора напоминаний (\"Отправить\")."

@@ -298,19 +298,33 @@ local function versionNotice(sender, version, message)
     ns.Options:ShowDialog({instance = "version", title = L["Newer version"], message = message, buttons = {{label = L["Close"]}}})
 end
 
+-- how a player is shown: class coloured, NSRT nickname if that's on and NSRT is there.
+-- NSAPI:GetName respects NSRT's own nickname setting and errors are swallowed, so no NSRT = plain name
+function Comms.PlayerName(name, classFile)
+    local shown = Ambiguate(name, "none")
+    if settings().nsrtNicknames and type(NSAPI) == "table" and type(NSAPI.GetName) == "function" then
+        local ok, nickname = pcall(NSAPI.GetName, NSAPI, name)
+        if ok and usable(nickname) and type(nickname) == "string" and nickname ~= "" then shown = nickname end
+    end
+    if not classFile and UnitExists(name) then classFile = select(2, UnitClass(name)) end
+    local color = usable(classFile) and classFile and C_ClassColor.GetClassColor(classFile)
+    return color and color:WrapTextInColorCode(shown) or shown
+end
+
 -- AceComm callback, tests call it directly too
 function Comms.OnReceive(prefix, message, _, sender)
     if prefix ~= PREFIX or not usable(sender) or not usable(message) or type(message) ~= "string" then return end
     if UnitIsUnit(sender, "player") then return end
     if not Comms.IsSenderAllowed(sender) then return end
-    local name = Ambiguate(sender, "short")
+    local name = Ambiguate(sender, "short") -- real name, so the newer version popup shows once per player
+    local shown = Comms.PlayerName(sender)
     local data, err, reason = ns.ImportExport.Decode(message)
     if not data then
         if reason == "tooNew" then
             versionNotice(name, err, format(
-                            L["%s shared reminders you cannot import yet:\n%s\n\nPlease update Ready Check Reminder."], name, err))
+                            L["%s shared reminders you cannot import yet:\n%s\n\nPlease update Ready Check Reminder."], shown, err))
         elseif reason == "tooOld" then
-            ns.addon:Print(format(L["Ignored reminders from %s: %s"], name, err))
+            ns.addon:Print(format(L["Ignored reminders from %s: %s"], shown, err))
         end
         return
     end
@@ -318,9 +332,9 @@ function Comms.OnReceive(prefix, message, _, sender)
     if data.newer then
         versionNotice(name, data.addonVersion, format(
                         L["%s uses a newer version of Ready Check Reminder (%s); you have %s.\n\nTheir reminders are still imported when nothing conflicts. Consider updating."],
-                        name, data.addonVersion, ns.ImportExport.GetAddonVersion() or "?"))
+                        shown, data.addonVersion, ns.ImportExport.GetAddonVersion() or "?"))
     end
-    queue[#queue + 1] = {data = data, sender = name}
+    queue[#queue + 1] = {data = data, sender = shown}
     processNext()
 end
 

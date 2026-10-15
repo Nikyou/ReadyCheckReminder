@@ -229,6 +229,8 @@ L["no response"] = true
 L["Reminder check"] = true
 L["Check how many reminders players have for each boss. Only players with the addon can be checked."] = true
 L["Check"] = true
+L["Use NSRT nicknames"] = true
+L["Shows players by their Northern Sky Raid Tools nickname when sending, in the reminder check and in messages. Does nothing without NSRT."] = true
 
 -- Comms.lua
 L["You are not in a group."] = true

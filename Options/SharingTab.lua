@@ -18,6 +18,10 @@ local OPTIONS = {
         key = "overwrite",
         label = L["Overwrite by default"],
         help = L["Automatically overwrite reminders when received from other players. When off, you are asked first."],
+    }, {
+        key = "nsrtNicknames",
+        label = L["Use NSRT nicknames"],
+        help = L["Shows players by their Northern Sky Raid Tools nickname when sending, in the reminder check and in messages. Does nothing without NSRT."],
     },
 }
 
@@ -39,11 +43,7 @@ local function scopeItems()
     return items
 end
 
-local function colouredName(name, classes)
-    local classFile = classes[name]
-    local color = classFile and C_ClassColor.GetClassColor(classFile)
-    return color and color:WrapTextInColorCode(name) or name
-end
+local function colouredName(name, classes) return ns.Comms.PlayerName(name, classes[name]) end
 
 -- redraws the status line and the per-player list of the last check
 local function renderQuery(query)

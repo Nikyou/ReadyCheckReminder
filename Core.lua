@@ -29,6 +29,7 @@ local defaults = {
             onlyTrusted = true, -- leader/assists only
             onlyGuild = true,
             overwrite = false, -- ask before overwriting existing reminders
+            nsrtNicknames = true, -- show NSRT nicknames instead of character names
         },
         reminders = {}, -- [bossKey] = ordered list
     },

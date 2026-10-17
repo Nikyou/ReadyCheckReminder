@@ -58,8 +58,18 @@ local function renderQuery(query)
     for _, member in ipairs(ns.Comms.GetGroupMembers()) do classes[Ambiguate(member.name, "none")] = member.classFile end
 
     local names, answered = {}, 0
-    for name in pairs(query.expected) do names[#names + 1] = name end
-    table.sort(names)
+    local sortKeys = {}
+    for name in pairs(query.expected) do
+        names[#names + 1] = name
+        sortKeys[name] = ns.Comms.DisplayName(name):lower()
+    end
+    -- no response first, so they don't get lost between the counts, then alphabetical
+    table.sort(names, function(a, b)
+        local aMissing, bMissing = not query.results[a], not query.results[b]
+        if aMissing ~= bMissing then return aMissing end
+        if sortKeys[a] ~= sortKeys[b] then return sortKeys[a] < sortKeys[b] end
+        return a < b
+    end)
     for _ in pairs(query.results) do answered = answered + 1 end
     controls.status:SetText(format(query.done and L["%d of %d checked."] or L["Checking: %d of %d"], answered,
                                    #names))

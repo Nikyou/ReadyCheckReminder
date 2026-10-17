@@ -1,3 +1,6 @@
+#### 12.1.6
+### Sharing
+* Reminder check results now list players with no response first.
 #### 12.1.5
 ### Sharing
 * New option "Use NSRT nicknames" (Sharing tab, on by default): players are shown by their Northern Sky Raid Tools nickname in the player list, the reminder check and share messages.

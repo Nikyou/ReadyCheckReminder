@@ -298,14 +298,19 @@ local function versionNotice(sender, version, message)
     ns.Options:ShowDialog({instance = "version", title = L["Newer version"], message = message, buttons = {{label = L["Close"]}}})
 end
 
--- how a player is shown: class coloured, NSRT nickname if that's on and NSRT is there.
+-- name without colour: NSRT nickname if that's on and NSRT is there.
 -- NSAPI:GetName respects NSRT's own nickname setting and errors are swallowed, so no NSRT = plain name
-function Comms.PlayerName(name, classFile)
-    local shown = Ambiguate(name, "none")
+function Comms.DisplayName(name)
     if settings().nsrtNicknames and type(NSAPI) == "table" and type(NSAPI.GetName) == "function" then
         local ok, nickname = pcall(NSAPI.GetName, NSAPI, name)
-        if ok and usable(nickname) and type(nickname) == "string" and nickname ~= "" then shown = nickname end
+        if ok and usable(nickname) and type(nickname) == "string" and nickname ~= "" then return nickname end
     end
+    return Ambiguate(name, "none")
+end
+
+-- how a player is shown: display name, class coloured
+function Comms.PlayerName(name, classFile)
+    local shown = Comms.DisplayName(name)
     if not classFile and UnitExists(name) then classFile = select(2, UnitClass(name)) end
     local color = usable(classFile) and classFile and C_ClassColor.GetClassColor(classFile)
     return color and color:WrapTextInColorCode(shown) or shown

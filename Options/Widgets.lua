@@ -81,6 +81,19 @@ function W.Button(parent, text, width, height, onClick)
     return button
 end
 
+-- round up/down arrow from the chat frame
+function W.ArrowButton(parent, direction, onClick)
+    local button = CreateFrame("Button", nil, parent)
+    button:SetSize(24, 24)
+    local base = direction == "UP" and "Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-" or "Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-"
+    button:SetNormalTexture(base .. "Up")
+    button:SetPushedTexture(base .. "Down")
+    button:SetDisabledTexture(base .. "Disabled")
+    button:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    button:SetScript("OnClick", function(self) if onClick then onClick(self) end end)
+    return button
+end
+
 function W.CheckBox(parent, text, onChange)
     local box = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
     box:SetSize(24, 24)

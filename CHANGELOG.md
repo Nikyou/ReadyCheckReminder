@@ -1,3 +1,11 @@
+#### 12.1.7
+### Sharing
+* Big shares (like all reminders at once) could fail to arrive without any message. If part of a share doesn't go out, the share is now sent again.
+* Sending now opens a status window with every player and how it went: sending, waiting for confirmation, received, not imported (with the reason), could not send or no confirmation. It updates as soon as each player answers. Players need 12.1.7 or newer to confirm.
+### Reminder check
+* New "Sorting" section: sort players by response, reminder count, player name, class and raid group. Tick the rules you want, choose the direction and use the arrows to change their order.
+### Import / export
+* New "Tie to boss" option when exporting a boss's reminders or a single reminder. Untick it to get a string without a boss, it is imported to whichever boss is selected (the import tells you so). These strings need 12.1.7 or newer.
 #### 12.1.6
 ### Sharing
 * Reminder check results now list players with no response first.

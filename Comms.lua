@@ -90,16 +90,88 @@ local function send(prefix, text, targets, priority)
     end
 end
 
--- true if it was handed to AceComm
-function Comms.SendString(text, count, targets)
-    if not canSend() then return false end
-    send(PREFIX, text, targets, "BULK")
-    if targets then
-        ns.addon:Print(format(L["Sent %d reminder(s) to %d player(s)."], count, #targets))
-    else
-        ns.addon:Print(format(L["Sent %d reminder(s) to your group."], count))
+-- Share delivery
+-- big shares go out in lots of parts. CTL retries throttled ones but drops anything else that fails,
+-- and then the whole share is lost on the other end, so we send it once more.
+-- receivers (ACK_VERSION+) answer with an "ack" on QUERY_PREFIX, id is a checksum of the text.
+-- states: sending, waiting, ok, failed, none (no answer) or the ack reason
+
+Comms.ACK_VERSION = "12.1.7"
+local ACK_TIMEOUT = 10 -- seconds, counted from the last part
+local RETRY_DELAY = 3
+local shares = {} -- [id] = share, kept around for late answers
+local shareCounter = 0
+Comms.onShareUpdate = nil
+
+local function shareID(text) return tostring(LibDeflate:Adler32(text)) end
+
+local ACK_STATES = {ok = true, blocked = true, tooNew = true, tooOld = true, damaged = true}
+
+local function shareUpdated(share) if Comms.onShareUpdate then Comms.onShareUpdate(share) end end
+
+-- from -> to for the given names, or everyone
+local function moveStates(share, names, from, to)
+    for name in pairs(names or share.states) do
+        if share.states[name] == from then share.states[name] = to end
     end
-    return true
+end
+
+-- all deliveries finished, give the answers a few seconds
+local function sendingDone(share)
+    shareUpdated(share)
+    ns.addon:ScheduleTimer(function()
+        moveStates(share, nil, "waiting", "none")
+        share.done = true
+        shareUpdated(share)
+    end, ACK_TIMEOUT)
+end
+
+-- one whisper, or the group message when target is nil
+local function deliver(share, text, target, retried)
+    share.sending = share.sending + 1
+    local channel = target and "WHISPER" or groupChannel()
+    local ok = channel ~= nil
+    local names = target and {[Ambiguate(target, "none")] = true} or nil
+    local function finished()
+        share.sending = share.sending - 1
+        if not ok and not retried then
+            share.sending = share.sending + 1 -- still busy until the retry runs
+            ns.addon:ScheduleTimer(function()
+                share.sending = share.sending - 1
+                deliver(share, text, target, true)
+            end, RETRY_DELAY)
+            return
+        end
+        moveStates(share, names, "sending", ok and "waiting" or "failed")
+        if share.sending == 0 then sendingDone(share) else shareUpdated(share) end
+    end
+    if not channel then return finished() end
+    -- called after each part: sent bytes, total bytes, did it go out
+    AceComm:SendCommMessage(PREFIX, text, channel, target, "BULK", function(_, sent, total, didSend)
+        if didSend == false then ok = false end
+        if sent >= total then finished() end
+    end)
+end
+
+-- returns the share (nil if we can't send) and opens the status window
+function Comms.SendString(text, count, targets)
+    if not canSend() then return nil end
+    shareCounter = shareCounter + 1
+    local share = {id = shareID(text), serial = shareCounter, count = count, group = not targets, states = {}, sending = 0}
+    local names = targets
+    if not names then
+        names = {}
+        for _, member in ipairs(Comms.GetGroupMembers()) do names[#names + 1] = member.name end
+    end
+    for _, name in ipairs(names) do share.states[Ambiguate(name, "none")] = "sending" end
+    shares[share.id] = share
+    if ns.Options then ns.Options:ShowShareStatus(share) end
+    if targets then
+        for _, name in ipairs(targets) do deliver(share, text, name) end
+    else
+        deliver(share, text, nil)
+    end
+    return share
 end
 
 -- receiver adds them or replaces by ID
@@ -220,16 +292,34 @@ function Comms.OnQuery(prefix, text, _, sender)
         query.results[name] = {counts = counts, version = type(message.version) == "string" and message.version or nil}
         query.expected[name] = true
         queryUpdated()
+    elseif message.t == "ack" and ACK_STATES[message.status] then
+        local name = Ambiguate(sender, "none")
+        local share = shares[message.id]
+        if not share and message.status == "damaged" then
+            -- damaged text won't match the checksum, use their latest share
+            for _, pending in pairs(shares) do
+                local state = pending.states[name]
+                if (state == "waiting" or state == "none") and (not share or pending.serial > share.serial) then share = pending end
+            end
+        end
+        if share and share.states[name] and share.states[name] ~= "failed" then
+            share.states[name] = message.status
+            shareUpdated(share)
+        end
     end
 end
 
 -- Receiving
 
 -- sender is "Name" or "Name-Realm". anything secret counts as a fail
+local function inGroup(sender)
+    local inRaid, inParty = UnitInRaid(sender), UnitInParty(sender)
+    return usable(inRaid) and usable(inParty) and (inRaid or inParty) and true or false
+end
+
 function Comms.IsSenderAllowed(sender)
     local opts = settings()
-    local inRaid, inParty = UnitInRaid(sender), UnitInParty(sender)
-    if not usable(inRaid) or not usable(inParty) or not (inRaid or inParty) then return false end
+    if not inGroup(sender) then return false end
     if opts.onlyTrusted then
         local leader, assistant = UnitIsGroupLeader(sender), UnitIsGroupAssistant(sender)
         if not usable(leader) or not usable(assistant) or not (leader or assistant) then return false end
@@ -298,8 +388,8 @@ local function versionNotice(sender, version, message)
     ns.Options:ShowDialog({instance = "version", title = L["Newer version"], message = message, buttons = {{label = L["Close"]}}})
 end
 
--- name without colour: NSRT nickname if that's on and NSRT is there.
--- NSAPI:GetName respects NSRT's own nickname setting and errors are swallowed, so no NSRT = plain name
+-- plain name, or the NSRT nickname when that's on. GetName follows NSRT's own setting,
+-- errors are ignored so without NSRT it's just the name
 function Comms.DisplayName(name)
     if settings().nsrtNicknames and type(NSAPI) == "table" and type(NSAPI.GetName) == "function" then
         local ok, nickname = pcall(NSAPI.GetName, NSAPI, name)
@@ -308,7 +398,7 @@ function Comms.DisplayName(name)
     return Ambiguate(name, "none")
 end
 
--- how a player is shown: display name, class coloured
+-- same, class coloured
 function Comms.PlayerName(name, classFile)
     local shown = Comms.DisplayName(name)
     if not classFile and UnitExists(name) then classFile = select(2, UnitClass(name)) end
@@ -320,11 +410,19 @@ end
 function Comms.OnReceive(prefix, message, _, sender)
     if prefix ~= PREFIX or not usable(sender) or not usable(message) or type(message) ~= "string" then return end
     if UnitIsUnit(sender, "player") then return end
-    if not Comms.IsSenderAllowed(sender) then return end
+    if not inGroup(sender) then return end
+    -- let the sender know, older versions ignore it
+    local function acknowledge(status)
+        if C_ChatInfo.InChatMessagingLockdown() then return end
+        AceComm:SendCommMessage(QUERY_PREFIX, encodeQuery({t = "ack", id = shareID(message), status = status}), "WHISPER",
+                                sender, "NORMAL")
+    end
+    if not Comms.IsSenderAllowed(sender) then return acknowledge("blocked") end
     local name = Ambiguate(sender, "short") -- real name, so the newer version popup shows once per player
     local shown = Comms.PlayerName(sender)
     local data, err, reason = ns.ImportExport.Decode(message)
     if not data then
+        acknowledge(reason == "tooNew" and "tooNew" or reason == "tooOld" and "tooOld" or "damaged")
         if reason == "tooNew" then
             versionNotice(name, err, format(
                             L["%s shared reminders you cannot import yet:\n%s\n\nPlease update Ready Check Reminder."], shown, err))
@@ -333,7 +431,8 @@ function Comms.OnReceive(prefix, message, _, sender)
         end
         return
     end
-    if data.kind == "profile" then return end
+    if data.kind == "profile" or data.unlinked then return end -- we never send these
+    acknowledge("ok")
     if data.newer then
         versionNotice(name, data.addonVersion, format(
                         L["%s uses a newer version of Ready Check Reminder (%s); you have %s.\n\nTheir reminders are still imported when nothing conflicts. Consider updating."],

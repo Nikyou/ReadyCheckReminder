@@ -45,6 +45,78 @@ end
 
 local function colouredName(name, classes) return ns.Comms.PlayerName(name, classes[name]) end
 
+-- Sorting
+-- every rule gives each player a value, nil always goes last. saved in profile.sharing.checkSort,
+-- rules missing there get added at the end
+
+local SORT_CRITERIA = {
+    {key = "response", label = L["Response"], asc = L["No response first"], desc = L["Response first"]},
+    {key = "count", label = L["Reminder count"], asc = L["Fewest first"], desc = L["Most first"]},
+    {key = "name", label = L["Player name"], asc = L["A to Z"], desc = L["Z to A"]},
+    {key = "class", label = L["Class"], asc = L["A to Z"], desc = L["Z to A"]},
+    {key = "group", label = L["Raid group"], asc = L["1 to 8"], desc = L["8 to 1"]},
+}
+local CRITERIA_BY_KEY = {}
+for _, criterion in ipairs(SORT_CRITERIA) do CRITERIA_BY_KEY[criterion.key] = criterion end
+local DEFAULT_ON = {response = true, name = true}
+
+-- saved order, unknown or doubled keys dropped, missing ones appended
+local function sortRules()
+    local saved = db().checkSort
+    local rules, seen = {}, {}
+    if type(saved) == "table" then
+        for _, rule in ipairs(saved) do
+            if type(rule) == "table" and CRITERIA_BY_KEY[rule.key] and not seen[rule.key] then
+                seen[rule.key] = true
+                rules[#rules + 1] = {key = rule.key, on = rule.on and true or false, desc = rule.desc and true or false}
+            end
+        end
+    end
+    for _, criterion in ipairs(SORT_CRITERIA) do
+        if not seen[criterion.key] then
+            rules[#rules + 1] = {key = criterion.key, on = DEFAULT_ON[criterion.key] or false, desc = false}
+        end
+    end
+    db().checkSort = rules
+    return rules
+end
+
+local function totalCount(result)
+    local total = 0
+    for _, count in pairs(result.counts) do total = total + count end
+    return total
+end
+
+-- real name settles any ties left
+local function sortNames(names, query, members)
+    local values = {}
+    for _, name in ipairs(names) do
+        local result, member = query.results[name], members[name]
+        local classFile = member and member.classFile
+        values[name] = {
+            response = result and 1 or 0,
+            count = result and totalCount(result) or nil,
+            name = ns.Comms.DisplayName(name):lower(),
+            class = classFile and (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classFile] or classFile):lower() or nil,
+            group = member and member.subgroup or nil,
+        }
+    end
+    local rules = {}
+    for _, rule in ipairs(sortRules()) do if rule.on then rules[#rules + 1] = rule end end
+    table.sort(names, function(a, b)
+        for _, rule in ipairs(rules) do
+            local x, y = values[a][rule.key], values[b][rule.key]
+            if x ~= y then
+                if x == nil then return false end
+                if y == nil then return true end
+                if rule.desc then return x > y end
+                return x < y
+            end
+        end
+        return a < b
+    end)
+end
+
 -- redraws the status line and the per-player list of the last check
 local function renderQuery(query)
     if not controls.results then return end
@@ -54,22 +126,15 @@ local function renderQuery(query)
         controls.resultsScroll:SetContentHeight(1)
         return
     end
-    local classes = {}
-    for _, member in ipairs(ns.Comms.GetGroupMembers()) do classes[Ambiguate(member.name, "none")] = member.classFile end
+    local classes, members = {}, {}
+    for _, member in ipairs(ns.Comms.GetGroupMembers()) do
+        local name = Ambiguate(member.name, "none")
+        classes[name], members[name] = member.classFile, member
+    end
 
     local names, answered = {}, 0
-    local sortKeys = {}
-    for name in pairs(query.expected) do
-        names[#names + 1] = name
-        sortKeys[name] = ns.Comms.DisplayName(name):lower()
-    end
-    -- no response first, so they don't get lost between the counts, then alphabetical
-    table.sort(names, function(a, b)
-        local aMissing, bMissing = not query.results[a], not query.results[b]
-        if aMissing ~= bMissing then return aMissing end
-        if sortKeys[a] ~= sortKeys[b] then return sortKeys[a] < sortKeys[b] end
-        return a < b
-    end)
+    for name in pairs(query.expected) do names[#names + 1] = name end
+    sortNames(names, query, members)
     for _ in pairs(query.results) do answered = answered + 1 end
     controls.status:SetText(format(query.done and L["%d of %d checked."] or L["Checking: %d of %d"], answered,
                                    #names))
@@ -79,9 +144,7 @@ local function renderQuery(query)
     for _, name in ipairs(names) do
         local result = query.results[name]
         if result then
-            local total = 0
-            for _, count in pairs(result.counts) do total = total + count end
-            lines[#lines + 1] = colouredName(name, classes) .. ": " .. format(L["reminders: %d"], total)
+            lines[#lines + 1] = colouredName(name, classes) .. ": " .. format(L["reminders: %d"], totalCount(result))
             if not single then
                 for _, boss in ns.Database.IterateBosses() do
                     local count = result.counts[boss.key]
@@ -135,12 +198,84 @@ local function create(parent)
     end)
     check:FitWidth()
     check:SetPoint("LEFT", controls.scope, "RIGHT", 8, 0)
-    controls.status = W.Label(parent, "", 11, Style.MUTED)
-    controls.status:SetPoint("TOPLEFT", x, -96)
 
+    -- one row per rule, refilled from sortRules() when the order changes
+    local sortOpen = false
+    local sortRows = {}
+    local sortHeader
+    local function sortChanged()
+        controls.refreshSort()
+        renderQuery(ns.Comms.GetQuery())
+    end
+    local function moveRule(index, delta)
+        local rules = sortRules()
+        local other = index + delta
+        if not rules[other] then return end
+        rules[index], rules[other] = rules[other], rules[index]
+        sortChanged()
+    end
+    for index = 1, #SORT_CRITERIA do
+        local row = {}
+        row.box = W.CheckBox(parent, "", function(checked)
+            sortRules()[index].on = checked
+            sortChanged()
+        end)
+        row.direction = W.Dropdown(parent, 150, function()
+            local criterion = CRITERIA_BY_KEY[sortRules()[index].key]
+            return {{value = false, text = criterion.asc}, {value = true, text = criterion.desc}}
+        end, function(value)
+            sortRules()[index].desc = value
+            sortChanged()
+        end)
+        row.up = W.ArrowButton(parent, "UP", function() moveRule(index, -1) end)
+        row.down = W.ArrowButton(parent, "DOWN", function() moveRule(index, 1) end)
+        sortRows[index] = row
+    end
+
+    controls.status = W.Label(parent, "", 11, Style.MUTED)
     local panel = W.Panel(parent)
-    panel:SetPoint("TOPLEFT", x, -116)
     panel:SetPoint("BOTTOMRIGHT")
+
+    local function layout()
+        sortHeader:SetOpen(sortOpen)
+        local top = 94
+        sortHeader:SetPoint("TOPLEFT", x, -top)
+        top = top + 24
+        for _, row in ipairs(sortRows) do
+            for _, widget in pairs(row) do widget:SetShown(sortOpen) end
+            if sortOpen then
+                row.box:SetPoint("TOPLEFT", x, -top)
+                row.direction:SetPoint("TOPLEFT", x + 160, -top)
+                row.up:SetPoint("LEFT", row.direction, "RIGHT", 6, 0)
+                row.down:SetPoint("LEFT", row.up, "RIGHT", 0, 0)
+                top = top + 26
+            end
+        end
+        controls.status:SetPoint("TOPLEFT", x, -(top + 2))
+        panel:SetPoint("TOPLEFT", x, -(top + 22))
+    end
+    sortHeader = W.SectionToggle(parent, L["Sorting"], function()
+        sortOpen = not sortOpen
+        layout()
+    end)
+    W.AddTooltip(sortHeader, function(tooltip)
+        tooltip:SetText(L["Sorting"])
+        tooltip:AddLine(L["Players are sorted by the ticked rules from top to bottom. Use the arrows to change their order."], 1, 1, 1, true)
+    end)
+
+    function controls.refreshSort()
+        local rules = sortRules()
+        for index, row in ipairs(sortRows) do
+            local rule = rules[index]
+            row.box:SetLabel(index .. ". " .. CRITERIA_BY_KEY[rule.key].label)
+            row.box:SetChecked(rule.on)
+            row.direction:SetValue(rule.desc)
+            row.direction:SetEnabled(rule.on)
+            row.up:SetEnabled(index > 1)
+            row.down:SetEnabled(index < #rules)
+        end
+    end
+    layout()
     controls.resultsScroll = W.ScrollArea(panel)
     controls.resultsScroll:SetPoint("TOPLEFT", 8, -8)
     controls.resultsScroll:SetPoint("BOTTOMRIGHT", -26, 8)
@@ -155,6 +290,7 @@ end
 local function refresh()
     for _, option in ipairs(OPTIONS) do controls[option.key]:SetChecked(db()[option.key]) end
     controls.scope:SetValue(checkScope)
+    controls.refreshSort()
     renderQuery(ns.Comms.GetQuery())
 end
 

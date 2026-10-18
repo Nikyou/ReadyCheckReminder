@@ -92,6 +92,23 @@ L["Into current"] = true
 L["Overwrite the settings of \"%s\"?"] = true
 L["Send to group"] = true
 L["Refresh"] = true
+L["Tie to boss"] = true
+L["Copy this string (Ctrl+C) and share it. It is not tied to a boss and is imported to whichever boss is selected."] = true
+L["sending..."] = true
+L["waiting for confirmation..."] = true
+L["received"] = true
+L["could not send"] = true
+L["no confirmation"] = true
+L["not imported: blocked by their sharing settings"] = true
+L["not imported: they need a newer version"] = true
+L["not imported: your version is too old for them"] = true
+L["not imported: it arrived damaged"] = true
+L["Players with no confirmation may not have the addon, or have a version older than %s."] = true
+L["%d of %d confirmed."] = true
+L["Confirmed: %d of %d"] = true
+L["Sending reminders"] = true
+L["This string is not tied to a boss. Select a boss in the list first, then import it again."] = true
+L["This string is not tied to a boss, so it will be imported to the selected boss: %s."] = true
 
 -- Options/DisplayTab.lua
 L["None"] = true
@@ -231,11 +248,24 @@ L["Check how many reminders players have for each boss. Only players with the ad
 L["Check"] = true
 L["Use NSRT nicknames"] = true
 L["Shows players by their Northern Sky Raid Tools nickname when sending, in the reminder check and in messages. Does nothing without NSRT."] = true
+L["Response"] = true
+L["No response first"] = true
+L["Response first"] = true
+L["Reminder count"] = true
+L["Fewest first"] = true
+L["Most first"] = true
+L["Player name"] = true
+L["A to Z"] = true
+L["Z to A"] = true
+L["Raid group"] = true
+L["1 to 8"] = true
+L["8 to 1"] = true
+L["Sorting"] = true
+L["Players are sorted by the ticked rules from top to bottom. Use the arrows to change their order."] = true
 
 -- Comms.lua
 L["You are not in a group."] = true
 L["Addon messages are restricted right now. Try again after the encounter."] = true
-L["Sent %d reminder(s) to your group."] = true
 L["Received %d reminder(s) for %s from %s."] = true
 L["Reminders shared by %s"] = true
 L["Ignore"] = true
@@ -244,4 +274,5 @@ L["%s shared reminders you cannot import yet:\n%s\n\nPlease update Ready Check R
 L["Ignored reminders from %s: %s"] = true
 L["%s uses a newer version of Ready Check Reminder (%s); you have %s.\n\nTheir reminders are still imported when nothing conflicts. Consider updating."] =
   true
-L["Sent %d reminder(s) to %d player(s)."] = true
+L["Sending %d reminder(s) to %d player(s)."] = true
+L["Sending %d reminder(s) to your group."] = true

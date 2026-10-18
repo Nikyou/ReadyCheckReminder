@@ -54,6 +54,9 @@ function ImportExport.GetAddonVersion() return C_AddOns.GetAddOnMetadata(ADDON_N
 -- need 12.1.2. everything else stays readable by MIN_READER_VERSION
 local SPACED_KEYWORD_READER = "12.1.2"
 
+-- strings without a boss go into the selected boss, older versions can't do that
+local UNLINKED_READER = "12.1.7"
+
 local function hasSpacedKeyword(payload)
     local lists = {}
     if payload.reminders and payload.kind ~= "profile" then lists[1] = payload.reminders end
@@ -71,7 +74,8 @@ end
 function ImportExport.Encode(payload)
     payload.v = PAYLOAD_VERSION
     payload.addonVersion = payload.addonVersion or ImportExport.GetAddonVersion()
-    payload.minVersion = payload.minVersion or (hasSpacedKeyword(payload) and SPACED_KEYWORD_READER or MIN_READER_VERSION)
+    payload.minVersion = payload.minVersion or (payload.unlinked and UNLINKED_READER)
+                           or (hasSpacedKeyword(payload) and SPACED_KEYWORD_READER or MIN_READER_VERSION)
     local serialized = LibSerialize:Serialize(payload)
     local compressed = LibDeflate:CompressDeflate(serialized, {level = 9})
     return PREFIX .. LibDeflate:EncodeForPrint(compressed)
@@ -80,10 +84,14 @@ local encode = ImportExport.Encode
 
 -- Export
 
-function ImportExport.ExportReminder(bossKey, reminder) return ImportExport.ExportReminders(bossKey, {reminder}) end
+-- unlinked = no boss in the string
 
-function ImportExport.ExportReminders(bossKey, reminders)
-    return encode({kind = "reminders", boss = bossKey, reminders = reminders})
+function ImportExport.ExportReminder(bossKey, reminder, unlinked)
+    return ImportExport.ExportReminders(bossKey, {reminder}, unlinked)
+end
+
+function ImportExport.ExportReminders(bossKey, reminders, unlinked)
+    return encode({kind = "reminders", boss = not unlinked and bossKey or nil, unlinked = unlinked or nil, reminders = reminders})
 end
 
 -- empty bosses are left out so the receiver's lists for them don't get wiped. nil if nothing to send
@@ -100,8 +108,14 @@ function ImportExport.ExportSection(sectionKey)
     return encode({kind = "section", section = sectionKey, bosses = bosses}), count
 end
 
-function ImportExport.ExportBoss(bossKey) return
-  encode({kind = "boss", boss = bossKey, reminders = ns.Reminders.GetList(bossKey)}) end
+function ImportExport.ExportBoss(bossKey, unlinked)
+    return encode({
+        kind = "boss",
+        boss = not unlinked and bossKey or nil,
+        unlinked = unlinked or nil,
+        reminders = ns.Reminders.GetList(bossKey),
+    })
+end
 
 -- settings always go in; reminders only for the bosses in bossKeys (can be empty)
 function ImportExport.ExportProfile(bossKeys)
@@ -186,7 +200,8 @@ local function checkVersion(payload)
     return true, ImportExport.CompareVersions(made, mine) == 1
 end
 
--- returns { kind, boss?, reminders, settings?, skippedBosses?, addonVersion, newer }
+-- returns { kind, boss?, unlinked?, reminders, settings?, skippedBosses?, addonVersion, newer },
+-- unlinked ones get data.boss from the importer
 -- or nil, localised error, and "tooOld" / "tooNew" when the version was the problem
 function ImportExport.Decode(text)
     if type(text) ~= "string" then return nil, L["The import string is empty."] end
@@ -257,12 +272,13 @@ function ImportExport.DecodePayload(payload)
 
     local kind = payload.kind == "reminder" and "reminders" or payload.kind
     if kind ~= "reminders" and kind ~= "boss" then return nil, L["The import string is damaged."] end
-    local boss = type(payload.boss) == "string" and ns.Database.GetBoss(payload.boss)
-    if not boss then return nil, L["The boss in this string is not in the boss database."] end
+    local unlinked = payload.unlinked == true
+    local boss = not unlinked and type(payload.boss) == "string" and ns.Database.GetBoss(payload.boss)
+    if not boss and not unlinked then return nil, L["The boss in this string is not in the boss database."] end
     local reminders = sanitizeList(payload.reminders)
     if not reminders then return nil, L["A reminder in this string is invalid."] end
     if kind == "reminders" and #reminders == 0 then return nil, L["The import string is damaged."] end
-    return {kind = kind, boss = boss, reminders = reminders}
+    return {kind = kind, boss = boss or nil, unlinked = unlinked or nil, reminders = reminders}
 end
 
 -- Reminder import

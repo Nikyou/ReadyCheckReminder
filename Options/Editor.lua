@@ -211,8 +211,10 @@ local function createWidgets()
     w.send:FitWidth()
     w.duplicate = register(W.Button(content, L["Duplicate"], nil, 22, function() ns.RemindersTab.DuplicateReminder(reminder) end))
     w.duplicate:FitWidth()
-    w.export = register(W.Button(content, L["Export"], nil, 22,
-                                 function() ns.Options:ShowExport(ns.ImportExport.ExportReminder(bossKey, reminder)) end))
+    w.export = register(W.Button(content, L["Export"], nil, 22, function()
+        local function makeString(linked) return ns.ImportExport.ExportReminder(bossKey, reminder, not linked) end
+        ns.Options:ShowExport(makeString(true), makeString)
+    end))
     w.export:FitWidth()
     w.delete = register(W.Button(content, L["Delete"], nil, 22, function() ns.RemindersTab.DeleteReminder(reminder) end))
     w.delete:FitWidth()

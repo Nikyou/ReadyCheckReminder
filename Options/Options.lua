@@ -162,6 +162,22 @@ local function createDialog()
                            function() for _, box in ipairs(dialog.list.boxes) do box:SetChecked(false) end end)
     dialog.none:FitWidth()
 
+    -- read-only list, the send status redraws it
+    dialog.results = W.Panel(dialog)
+    dialog.results.scroll = W.ScrollArea(dialog.results)
+    dialog.results.scroll:SetPoint("TOPLEFT", 8, -8)
+    dialog.results.scroll:SetPoint("BOTTOMRIGHT", -26, 8)
+    dialog.results.text = W.Label(dialog.results.scroll.content, "")
+    dialog.results.text:SetPoint("TOPLEFT")
+    dialog.results.text:SetPoint("RIGHT")
+    dialog.results.text:SetJustifyV("TOP")
+    function dialog.results:SetText(text)
+        self.text:SetText(text)
+        self.scroll:SetContentHeight(self.text:GetStringHeight() + 8)
+    end
+
+    dialog.toggle = W.CheckBox(dialog, "")
+
     dialog.buttons = {}
     dialog:Hide()
     return dialog
@@ -178,8 +194,11 @@ end
 --   input      { text, readOnly }, the big multi-line box for import/export strings
 --   field      { label, text }, single-line input
 --   checklist  { { key, label, checked } }
+--   results    text for a scrolling list, dialog.results:SetText() redraws it
+--   toggle     { label, checked, onClick(checked) }, one checkbox at the bottom
 --   buttons    { { label, onClick(value) } }, value is the input text, field text or checked keys
 --   instance   key for a separate window so it doesn't replace the "main" one (comms uses "share")
+-- returns the dialog frame
 function Options:ShowDialog(opts)
     local key = opts.instance or "main"
     local dialog = dialogs[key]
@@ -194,7 +213,7 @@ function Options:ShowDialog(opts)
         end
     end
     W.CloseMenu()
-    local width = (opts.input or opts.checklist) and 580 or 460
+    local width = (opts.input or opts.checklist or opts.results) and 580 or 460
     local inner = width - 48
     local y = 44
     dialog.title:SetText(opts.title or "")
@@ -276,6 +295,26 @@ function Options:ShowDialog(opts)
         dialog.field:SetFocus()
     end
 
+    dialog.results:SetShown(opts.results ~= nil)
+    if opts.results then
+        dialog.results:ClearAllPoints()
+        dialog.results:SetPoint("TOPLEFT", 24, -y)
+        dialog.results:SetSize(inner, 260)
+        dialog.results:SetText(opts.results)
+        dialog.results.scroll:SetVerticalScroll(0)
+        y = y + 272
+    end
+
+    dialog.toggle:SetShown(opts.toggle ~= nil)
+    if opts.toggle then
+        dialog.toggle:ClearAllPoints()
+        dialog.toggle:SetPoint("TOPLEFT", 20, -y)
+        dialog.toggle:SetLabel(opts.toggle.label)
+        dialog.toggle:SetChecked(opts.toggle.checked)
+        dialog.toggle:SetScript("OnClick", function(box) opts.toggle.onClick(box:GetChecked()) end)
+        y = y + 30
+    end
+
     dialog:SetSize(width, math.max(140, y + 56))
 
     for _, button in ipairs(dialog.buttons) do button:Hide() end
@@ -306,8 +345,10 @@ function Options:ShowDialog(opts)
         end)
         button:Show()
     end
+    dialog.share = opts.share -- for ShowShareStatus
     dialog:Show()
     dialog:Raise()
+    return dialog
 end
 
 function Options:Confirm(message, buttons) self:ShowDialog({title = L["Please confirm"], message = message, buttons = buttons}) end
@@ -316,13 +357,92 @@ function Options:ShowMessage(message)
     self:ShowDialog({title = L["Ready Check Reminder"], message = message, buttons = {{label = L["Close"]}}})
 end
 
-function Options:ShowExport(text)
+-- with makeString(linked) there's a "Tie to boss" box to switch strings
+function Options:ShowExport(text, makeString, linked)
+    linked = linked ~= false
+    local toggle
+    if makeString then
+        toggle = {
+            label = L["Tie to boss"],
+            checked = linked,
+            onClick = function(checked) self:ShowExport(makeString(checked), makeString, checked) end,
+        }
+    end
     self:ShowDialog({
         title = L["Export"],
-        message = L["Copy this string (Ctrl+C) and share it."],
+        message = linked and L["Copy this string (Ctrl+C) and share it."]
+          or L["Copy this string (Ctrl+C) and share it. It is not tied to a boss and is imported to whichever boss is selected."],
         input = {text = text, readOnly = true},
+        toggle = toggle,
         buttons = {{label = L["Close"]}},
     })
+end
+
+-- Send status
+
+local SHARE_STATES = {
+    sending = {L["sending..."], "|cff999999"},
+    waiting = {L["waiting for confirmation..."], "|cff999999"},
+    ok = {L["received"], "|cff33ff33"},
+    failed = {L["could not send"], "|cffff3333"},
+    none = {L["no confirmation"], "|cff999999"},
+    blocked = {L["not imported: blocked by their sharing settings"], "|cffff3333"},
+    tooNew = {L["not imported: they need a newer version"], "|cffff3333"},
+    tooOld = {L["not imported: your version is too old for them"], "|cffff3333"},
+    damaged = {L["not imported: it arrived damaged"], "|cffff3333"},
+}
+
+-- header and player lines, anyone without "received" on top, then by name
+local function shareStatusText(share)
+    local names, confirmed, total = {}, 0, 0
+    for name, state in pairs(share.states) do
+        names[#names + 1] = name
+        total = total + 1
+        if state == "ok" then confirmed = confirmed + 1 end
+    end
+    local keys = {}
+    for _, name in ipairs(names) do keys[name] = ns.Comms.DisplayName(name):lower() end
+    table.sort(names, function(a, b)
+        local aDone, bDone = share.states[a] == "ok", share.states[b] == "ok"
+        if aDone ~= bDone then return bDone end
+        if keys[a] ~= keys[b] then return keys[a] < keys[b] end
+        return a < b
+    end)
+    local lines = {}
+    local unconfirmed = false
+    for _, name in ipairs(names) do
+        local state = SHARE_STATES[share.states[name]] or {"?", "|cff999999"}
+        lines[#lines + 1] = ns.Comms.PlayerName(name) .. ": " .. state[2] .. state[1] .. "|r"
+        if share.states[name] == "none" then unconfirmed = true end
+    end
+    if unconfirmed then
+        lines[#lines + 1] = ""
+        lines[#lines + 1] = "|cff999999"
+                              .. format(L["Players with no confirmation may not have the addon, or have a version older than %s."],
+                                        ns.Comms.ACK_VERSION) .. "|r"
+    end
+    local header = share.group and format(L["Sending %d reminder(s) to your group."], share.count)
+                     or format(L["Sending %d reminder(s) to %d player(s)."], share.count, total)
+    header = header .. "\n" .. format(share.done and L["%d of %d confirmed."] or L["Confirmed: %d of %d"], confirmed, total)
+    return header, table.concat(lines, "\n")
+end
+
+-- redraws whenever someone's state changes
+function Options:ShowShareStatus(share)
+    local header, lines = shareStatusText(share)
+    local dialog = self:ShowDialog({
+        title = L["Sending reminders"],
+        message = header,
+        results = lines,
+        share = share,
+        buttons = {{label = L["Close"]}},
+    })
+    ns.Comms.onShareUpdate = function(updated)
+        if not dialog:IsShown() or dialog.share ~= updated then return end
+        local newHeader, newLines = shareStatusText(updated)
+        dialog.message:SetText(newHeader)
+        dialog.results:SetText(newLines)
+    end
 end
 
 -- who gets a share or a check. everyone online starts ticked. onConfirm gets nil targets if
@@ -385,11 +505,11 @@ function Options:ShowReminderExport(bossKey)
                 label = L["Export"],
                 onClick = function(selected)
                     if #selected == 0 then return end
-                    if #selected == #list then
-                        self:ShowExport(ns.ImportExport.ExportBoss(bossKey))
-                    else
-                        self:ShowExport(ns.ImportExport.ExportReminders(bossKey, selected))
+                    local function makeString(linked)
+                        if #selected == #list then return ns.ImportExport.ExportBoss(bossKey, not linked) end
+                        return ns.ImportExport.ExportReminders(bossKey, selected, not linked)
                     end
+                    self:ShowExport(makeString(true), makeString)
                 end,
             }, {
                 label = L["Send to group"],
@@ -426,12 +546,24 @@ function Options:ShowImport(onDone)
                         self:ShowMessage(err)
                         return
                     end
+                    local notice
+                    if data.unlinked then
+                        -- no boss in the string, use the selected one
+                        data.boss = Options.selectedBossKey and ns.Database.GetBoss(Options.selectedBossKey)
+                        if not data.boss then
+                            self:ShowMessage(L["This string is not tied to a boss. Select a boss in the list first, then import it again."])
+                            return
+                        end
+                        notice = format(L["This string is not tied to a boss, so it will be imported to the selected boss: %s."],
+                                        ns.Database.GetBossName(data.boss))
+                    end
                     local function apply(mode)
                         IE.Apply(data, mode)
                         Options.selectedBossKey = ns.ImportExport.FirstBoss(data).key
                         if onDone then onDone(data) end
                     end
                     local summary = IE.Summary(data)
+                    if notice then summary = notice .. "\n\n" .. summary end
                     local buttons
                     if IE.WouldOverwrite(data) then
                         local replaceLabel = (data.kind == "boss" or data.kind == "section") and L["Replace all"]
